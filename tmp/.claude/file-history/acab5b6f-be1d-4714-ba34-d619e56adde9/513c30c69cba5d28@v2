@@ -1,0 +1,36 @@
+# ♟️ Tactics
+
+The engine of practical results below master level. These files cover **every tactical motif** — how to recognize it, why it works, and how to train it — each with board diagrams, FEN + Lichess links, a recognition flowchart, worked examples, and graded exercises.
+
+> Start with the fundamentals (loose pieces → fork → pin → skewer), then work down. Drill the matching Lichess puzzle theme for each motif you study.
+
+| File | Motif |
+|---|---|
+| [loose-pieces.md](loose-pieces.md) | Loose pieces (LPDO) — what every tactic feeds on |
+| [fork.md](fork.md) | The fork / double attack by one piece |
+| [pin.md](pin.md) | The pin (absolute & relative) |
+| [skewer.md](skewer.md) | The skewer (reverse pin) |
+| [double-attack.md](double-attack.md) | Two simultaneous threats |
+| [discovered-attack.md](discovered-attack.md) | Unveiling a piece behind |
+| [discovered-check.md](discovered-check.md) | Discovered & double check |
+| [decoy.md](decoy.md) | Decoy / attraction |
+| [deflection.md](deflection.md) | Deflection / overload-away |
+| [removing-the-defender.md](removing-the-defender.md) | Eliminating the guard |
+| [overloading.md](overloading.md) | The overloaded piece |
+| [interference.md](interference.md) | Interference / obstruction |
+| [clearance-sacrifice.md](clearance-sacrifice.md) | Clearing a square or line |
+| [zwischenzug.md](zwischenzug.md) | The in-between move |
+| [x-ray.md](x-ray.md) | X-ray attack & defense |
+| [batteries.md](batteries.md) | Doubling up on a line |
+| [windmill.md](windmill.md) | The see-saw |
+| [trapped-piece.md](trapped-piece.md) | Trapping a piece |
+| [back-rank-mate.md](back-rank-mate.md) | Back-rank weakness & mate |
+| [smothered-mate.md](smothered-mate.md) | Knight mate in the corner |
+| [desperado.md](desperado.md) | The doomed-piece tactic |
+| [underpromotion.md](underpromotion.md) | Promoting to N/R/B |
+| [combinations-and-sacrifices.md](combinations-and-sacrifices.md) | Chaining motifs |
+| [mating-patterns.md](mating-patterns.md) | Named mates & mating nets |
+
+**Suggested order:** loose-pieces → fork → pin → skewer → double-attack → discovered-attack → discovered-check → decoy/deflection → removing-the-defender/overloading → interference/clearance → zwischenzug/x-ray/batteries → windmill/trapped-piece → back-rank/smothered → desperado/underpromotion → combinations → mating-patterns.
+
+↩ Back to [main index](../README.md) · [roadmap](../ROADMAP.md) · [tactic-recognition flowchart](../flowcharts/tactic-recognition.md)

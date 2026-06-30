@@ -1,0 +1,80 @@
+"""Scan engine: walk files, run rules, suppress, dedup, sort.
+
+``scan_path`` / ``scan_source`` are convenience facades used by tests and the
+CLI. Findings are reported with a POSIX, scan-root-relative ``file`` path.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Iterable, Iterator
+from pathlib import Path
+
+from scanner.context import FileContext
+from scanner.rules import all_rules
+from scanner.suppression import nosec_reason
+from scanner.walker import iter_python_files
+
+
+def _display_path(path: Path, base: Path) -> str:
+    try:
+        rel = path.resolve().relative_to(base.resolve())
+        return str(rel).replace("\\", "/")
+    except ValueError:
+        return str(path).replace("\\", "/")
+
+
+def _run_rules(ctx: FileContext, rules) -> Iterator:
+    for rule in rules:
+        for finding in rule.analyze(ctx):
+            if nosec_reason(ctx, finding) is None:
+                yield finding
+
+
+class Engine:
+    def __init__(self, rules=None, *, include_tests: bool = False, ext_engines=()):
+        self.rules = rules if rules is not None else all_rules()
+        self.include_tests = include_tests
+        self.ext_engines = ext_engines
+
+    def scan(self, target) -> list:
+        target = Path(target)
+        base = target if target.is_dir() else target.parent
+        findings: list = []
+        for path in iter_python_files(target, include_tests=self.include_tests):
+            ctx = FileContext.from_path(path)
+            if ctx is None:
+                continue
+            ctx.display_path = _display_path(path, base)
+            findings.extend(_run_rules(ctx, self.rules))
+        for engine in self.ext_engines:
+            findings.extend(engine.run(target))
+        return self._dedup(findings)
+
+    @staticmethod
+    def _dedup(findings: Iterable) -> list:
+        """Collapse duplicates. Same (file, line, CWE) from different engines
+        (e.g. native PY-SSL-001 and Bandit B502) merge into the higher-confidence
+        one; rules without a CWE are keyed by rule id + column instead."""
+        best: dict = {}
+        for f in findings:
+            key = (f.file, f.line, f.cwe) if f.cwe else (f.file, f.line, f.rule_id, f.col)
+            current = best.get(key)
+            if current is None or f.confidence.rank > current.confidence.rank:
+                best[key] = f
+        return sorted(
+            best.values(),
+            key=lambda f: (f.severity.rank, f.confidence.rank),
+            reverse=True,
+        )
+
+
+def scan_path(target, *, rules=None, include_tests: bool = False) -> list:
+    return Engine(rules=rules, include_tests=include_tests).scan(target)
+
+
+def scan_source(code: str, filename: str = "<memory>", *, rules=None) -> list:
+    ctx = FileContext.from_source(code, filename)
+    if ctx is None:
+        return []
+    rules = rules if rules is not None else all_rules()
+    return list(_run_rules(ctx, rules))

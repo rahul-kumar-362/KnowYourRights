@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+"""check_links.py — report relative markdown links that point to missing files.
+
+Scans every .md file under the repo root and flags links of the form
+[text](some/path.md) whose target does not exist on disk. Ignores http(s) links,
+in-page anchors (#...), mailto:, and [[wiki-style]] concept tags.
+
+Usage:  python tools/check_links.py
+"""
+import os
+import re
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+
+def main():
+    missing = []
+    total_links = 0
+    for dirpath, _dirs, files in os.walk(ROOT):
+        if os.sep + "." in dirpath:
+            continue
+        for fn in files:
+            if not fn.endswith(".md"):
+                continue
+            path = os.path.join(dirpath, fn)
+            with open(path, encoding="utf-8") as f:
+                text = f.read()
+            for m in LINK.finditer(text):
+                target = m.group(1).strip()
+                if target.startswith(("http://", "https://", "#", "mailto:")):
+                    continue
+                total_links += 1
+                # strip any anchor
+                file_part = target.split("#", 1)[0]
+                if not file_part:
+                    continue
+                resolved = os.path.normpath(os.path.join(dirpath, file_part))
+                if not os.path.exists(resolved):
+                    rel = os.path.relpath(path, ROOT)
+                    missing.append((rel, target))
+    if missing:
+        print(f"DEAD LINKS: {len(missing)} (of {total_links} relative links checked)\n")
+        for src, tgt in sorted(missing):
+            print(f"  {src}  ->  {tgt}")
+    else:
+        print(f"OK: all {total_links} relative links resolve.")
+    return 1 if missing else 0
+
+if __name__ == "__main__":
+    sys.exit(main())

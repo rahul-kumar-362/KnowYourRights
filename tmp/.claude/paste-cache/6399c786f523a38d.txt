@@ -1,0 +1,12 @@
+I understand you want to make these fixes. Let me help you with what I can do:
+Fix 1 - Title: The title you provided is 165 characters, but the maximum allowed is 150 characters. I cannot set a title that exceeds this limit. Would you like me to use a shortened version, or would you prefer to provide a different title that's under 150 characters?
+Fix 2 - Asset: Let me search for that GitHub repository in the program's assets.
+Found assets
+Perfect! I found the asset. Now let me set it on your report.
+Set asset
+✓ Asset set successfully to https://github.com/Chia-Network/chia-blockchain
+Fix 3 - Report completeness note: I can add that note to your description, but I want to confirm first - would you like me to append that note to the end of your current description?
+For Fix 1 (Title): We still need to address the character limit. Would one of these work?
+"SSRF in Chia DataLayer via unvalidated mirror URLs enabling internal service and cloud metadata access" (108 characters)
+"SSRF in Chia DataLayer: mirror coins supply unvalidated URLs enabling internal service probing" (96 characters)
+Or please provide your own shortened version under 150 characters.

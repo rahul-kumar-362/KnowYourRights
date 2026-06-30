@@ -1,0 +1,66 @@
+"""Deduplication / known-findings store.
+
+A committed ``out/known_findings.json`` is the project's memory of what has
+already been seen and reported. Re-scans can filter out findings that are
+"stale" — already reported upstream, fixed, won't-fix, or carrying a CVE — so
+they are never re-reported.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+_STALE_STATUSES = {"reported", "fixed", "wontfix", "duplicate"}
+
+
+class KnownFindingStore:
+    def __init__(self, records=None, path=None):
+        self.path = Path(path) if path else None
+        self.records: dict = dict(records or {})
+
+    @classmethod
+    def load(cls, path) -> "KnownFindingStore":
+        p = Path(path)
+        if p.exists():
+            data = json.loads(p.read_text(encoding="utf-8"))
+            records = {r["fingerprint"]: r for r in data.get("findings", [])}
+            return cls(records=records, path=p)
+        return cls(records={}, path=p)
+
+    def save(self) -> None:
+        if self.path is None:
+            return
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {"findings": list(self.records.values())}
+        self.path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    def is_known(self, fingerprint) -> bool:
+        return fingerprint in self.records
+
+    def is_stale(self, fingerprint) -> bool:
+        record = self.records.get(fingerprint)
+        if not record:
+            return False
+        return record.get("status") in _STALE_STATUSES or bool(record.get("cve"))
+
+    def register_new(self, finding) -> bool:
+        """Record a finding as ``open`` if unseen. Returns True if newly added."""
+        fp = finding.fingerprint
+        if fp in self.records:
+            return False
+        self.records[fp] = {
+            "fingerprint": fp,
+            "rule_id": finding.rule_id,
+            "file": finding.file,
+            "line": finding.line,
+            "status": "open",
+            "reported_to": None,
+            "cve": None,
+            "note": None,
+        }
+        return True
+
+    def filter_new(self, findings) -> list:
+        """Drop findings that are already stale (reported/fixed/wontfix/CVE)."""
+        return [f for f in findings if not self.is_stale(f.fingerprint)]

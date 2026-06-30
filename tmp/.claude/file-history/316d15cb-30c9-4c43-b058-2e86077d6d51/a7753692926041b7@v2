@@ -1,0 +1,909 @@
+from fpdf import FPDF
+from fpdf.enums import XPos, YPos
+
+class ChessRoadmapPDF(FPDF):
+
+    DARK_BG    = (15, 23, 42)
+    GOLD       = (212, 175, 55)
+    GOLD_LIGHT = (255, 215, 80)
+    WHITE      = (255, 255, 255)
+    LIGHT_BG   = (245, 247, 250)
+    SECTION_BG = (30, 41, 59)
+    TEXT_DARK  = (30, 30, 30)
+    TEXT_MID   = (71, 85, 105)
+    GREEN      = (34, 197, 94)
+    RED        = (239, 68, 68)
+    BLUE       = (59, 130, 246)
+    AMBER      = (245, 158, 11)
+    PHASE_COLORS = [
+        (59, 130, 246),
+        (34, 197, 94),
+        (245, 158, 11),
+        (168, 85, 247),
+    ]
+
+    def header(self):
+        if self.page_no() == 1:
+            return
+        self.set_fill_color(*self.DARK_BG)
+        self.rect(0, 0, 210, 12, "F")
+        self.set_font("Helvetica", "B", 8)
+        self.set_text_color(*self.GOLD)
+        self.set_xy(0, 3)
+        self.cell(210, 6, "SCRODINGER -- GRANDMASTER ROADMAP 2026", align="C")
+        self.set_text_color(*self.TEXT_DARK)
+
+    def footer(self):
+        if self.page_no() == 1:
+            return
+        self.set_y(-12)
+        self.set_fill_color(*self.DARK_BG)
+        self.rect(0, self.get_y(), 210, 12, "F")
+        self.set_font("Helvetica", "", 7)
+        self.set_text_color(*self.GOLD)
+        self.cell(0, 8,
+            "Page " + str(self.page_no()) + "  |  Prepared June 2026  |  Based on chess.com & lichess.org profile analysis",
+            align="C")
+        self.set_text_color(*self.TEXT_DARK)
+
+    def h1(self, text):
+        self.set_font("Helvetica", "B", 20)
+        self.set_text_color(*self.GOLD)
+        self.ln(4)
+        self.cell(0, 10, text, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.set_draw_color(*self.GOLD)
+        self.set_line_width(0.6)
+        self.line(self.l_margin, self.get_y(), 210 - self.r_margin, self.get_y())
+        self.ln(3)
+        self.set_text_color(*self.TEXT_DARK)
+
+    def h2(self, text, color=None):
+        color = color or self.SECTION_BG
+        self.ln(3)
+        y = self.get_y()
+        self.set_fill_color(*color)
+        self.rect(self.l_margin, y, 190, 8, "F")
+        self.set_font("Helvetica", "B", 11)
+        self.set_text_color(*self.WHITE)
+        self.set_xy(self.l_margin + 3, y + 1)
+        self.cell(0, 6, text, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.set_text_color(*self.TEXT_DARK)
+        self.ln(2)
+
+    def h3(self, text, color=None):
+        color = color or self.GOLD
+        self.set_font("Helvetica", "B", 10)
+        self.set_text_color(*color)
+        self.cell(0, 6, text, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.set_text_color(*self.TEXT_DARK)
+        self.ln(1)
+
+    def body(self, text, size=9.5):
+        self.set_font("Helvetica", "", size)
+        self.set_text_color(*self.TEXT_DARK)
+        self.multi_cell(0, 5, text)
+        self.ln(1)
+
+    def bullet(self, items, indent=5):
+        self.set_font("Helvetica", "", 9.5)
+        self.set_text_color(*self.TEXT_DARK)
+        for item in items:
+            self.set_x(self.l_margin + indent)
+            self.cell(5, 5.5, "-")
+            self.multi_cell(0, 5.5, item)
+        self.ln(1)
+
+    def numbered(self, items, indent=5):
+        self.set_font("Helvetica", "", 9.5)
+        self.set_text_color(*self.TEXT_DARK)
+        for i, item in enumerate(items, 1):
+            self.set_x(self.l_margin + indent)
+            self.cell(6, 5.5, str(i) + ".")
+            self.multi_cell(0, 5.5, item)
+        self.ln(1)
+
+    def simple_table(self, headers, rows, col_widths, header_color=None, stripe=True):
+        hc = header_color or self.DARK_BG
+        self.set_font("Helvetica", "B", 9)
+        self.set_fill_color(*hc)
+        self.set_text_color(*self.GOLD)
+        for h, w in zip(headers, col_widths):
+            self.cell(w, 7, h, border=0, fill=True, align="C")
+        self.ln()
+        self.set_font("Helvetica", "", 9)
+        for ri, row in enumerate(rows):
+            if stripe:
+                if ri % 2 == 0:
+                    self.set_fill_color(245, 247, 250)
+                else:
+                    self.set_fill_color(255, 255, 255)
+            self.set_text_color(*self.TEXT_DARK)
+            for val, w in zip(row, col_widths):
+                self.cell(w, 6.5, str(val), border=0, fill=stripe, align="C")
+            self.ln()
+        self.ln(3)
+
+    def phase_box(self, number, title, target, color):
+        y = self.get_y()
+        w = 190
+        self.set_fill_color(*color)
+        self.rect(self.l_margin, y, w, 10, "F")
+        self.set_font("Helvetica", "B", 14)
+        self.set_text_color(*self.WHITE)
+        self.set_xy(self.l_margin + 2, y + 1)
+        self.cell(12, 8, "0" + str(number))
+        self.set_font("Helvetica", "B", 11)
+        self.set_xy(self.l_margin + 16, y + 2)
+        self.cell(100, 6, title)
+        self.set_font("Helvetica", "B", 8)
+        self.set_fill_color(255, 255, 255)
+        self.set_text_color(*color)
+        bw = 65
+        self.rect(self.l_margin + w - bw - 2, y + 2, bw, 6, "F")
+        self.set_xy(self.l_margin + w - bw - 2, y + 2)
+        self.cell(bw, 6, "TARGET: " + target, align="C")
+        self.set_text_color(*self.TEXT_DARK)
+        self.ln(12)
+
+    def info_box(self, text, color):
+        self.set_fill_color(*color)
+        self.set_text_color(*self.WHITE)
+        y = self.get_y()
+        self.rect(self.l_margin, y, 190, 1.5, "F")
+        self.set_x(self.l_margin + 3)
+        self.set_font("Helvetica", "B", 9.5)
+        self.multi_cell(184, 6, text)
+        self.set_fill_color(*color)
+        self.rect(self.l_margin, self.get_y(), 190, 1.5, "F")
+        self.ln(4)
+        self.set_text_color(*self.TEXT_DARK)
+
+    def stat_card(self, label, value, sub, x, y, w=44, color=None):
+        color = color or self.BLUE
+        self.set_fill_color(*self.LIGHT_BG)
+        self.rect(x, y, w, 22, "F")
+        self.set_fill_color(*color)
+        self.rect(x, y, w, 3, "F")
+        self.set_font("Helvetica", "B", 14)
+        self.set_text_color(*color)
+        self.set_xy(x, y + 4)
+        self.cell(w, 8, value, align="C")
+        self.set_font("Helvetica", "B", 7.5)
+        self.set_text_color(*self.TEXT_DARK)
+        self.set_xy(x, y + 12)
+        self.cell(w, 4, label, align="C")
+        self.set_font("Helvetica", "", 7)
+        self.set_text_color(*self.TEXT_MID)
+        self.set_xy(x, y + 16)
+        self.cell(w, 4, sub, align="C")
+        self.set_text_color(*self.TEXT_DARK)
+
+
+# ============================================================
+#  BUILD PDF
+# ============================================================
+
+pdf = ChessRoadmapPDF(orientation="P", unit="mm", format="A4")
+pdf.set_auto_page_break(auto=True, margin=15)
+pdf.set_left_margin(10)
+pdf.set_right_margin(10)
+pdf.set_top_margin(15)
+
+# ---- COVER PAGE ----
+pdf.add_page()
+
+pdf.set_fill_color(*pdf.DARK_BG)
+pdf.rect(0, 0, 210, 297, "F")
+
+sq = 7
+for col in range(30):
+    for row in range(4):
+        if (col + row) % 2 == 0:
+            pdf.set_fill_color(25, 35, 58)
+        else:
+            pdf.set_fill_color(20, 29, 47)
+        pdf.rect(col * sq, 260 + row * sq, sq, sq, "F")
+
+pdf.set_fill_color(*pdf.GOLD)
+pdf.rect(10, 60, 4, 100, "F")
+
+pdf.set_font("Helvetica", "B", 42)
+pdf.set_text_color(*pdf.GOLD)
+pdf.set_xy(20, 65)
+pdf.cell(0, 20, "ROAD TO")
+pdf.set_xy(20, 85)
+pdf.cell(0, 20, "GRANDMASTER")
+
+pdf.set_font("Helvetica", "", 16)
+pdf.set_text_color(180, 190, 210)
+pdf.set_xy(20, 112)
+pdf.cell(0, 8, "A Personalised Chess Development Roadmap")
+
+pdf.set_font("Helvetica", "B", 22)
+pdf.set_text_color(*pdf.GOLD_LIGHT)
+pdf.set_xy(20, 135)
+pdf.cell(0, 10, "SCRODINGER")
+
+pdf.set_draw_color(*pdf.GOLD)
+pdf.set_line_width(0.4)
+pdf.line(20, 150, 190, 150)
+
+pdf.set_font("Helvetica", "", 10)
+pdf.set_text_color(160, 170, 190)
+pdf.set_xy(20, 155)
+pdf.multi_cell(170, 6,
+    "chess.com: scrodingxxf  |  rahul_kumar_362  |  rahul_kumar_362_2\n"
+    "lichess.org: rahul_kumar_362")
+
+pdf.set_font("Helvetica", "B", 11)
+pdf.set_text_color(*pdf.GOLD)
+pdf.set_xy(20, 175)
+pdf.cell(0, 7, "BEST RATINGS ACROSS ALL ACCOUNTS")
+
+labels = ["Rapid (chess.com)", "Rapid (lichess)", "Blitz (lichess)", "Puzzles"]
+vals   = ["2010",              "1754",            "1707",            "2212"]
+for i, (lbl, val) in enumerate(zip(labels, vals)):
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.set_text_color(*pdf.GOLD_LIGHT)
+    pdf.set_xy(20 + i * 47, 186)
+    pdf.cell(44, 8, val, align="C")
+    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_text_color(140, 155, 175)
+    pdf.set_xy(20 + i * 47, 194)
+    pdf.cell(44, 5, lbl, align="C")
+
+pdf.set_line_width(0.3)
+pdf.set_draw_color(*pdf.GOLD)
+pdf.rect(20, 205, 170, 18)
+pdf.set_font("Helvetica", "B", 10)
+pdf.set_text_color(*pdf.GOLD)
+pdf.set_xy(20, 209)
+pdf.cell(170, 6, "ESTIMATED FIDE OTB RATING: ~1600 - 1700", align="C")
+pdf.set_font("Helvetica", "", 8.5)
+pdf.set_text_color(160, 170, 190)
+pdf.set_xy(20, 216)
+pdf.cell(170, 5, "GM requires 2500+  |  Gap: ~800-900 FIDE points", align="C")
+
+pdf.set_font("Helvetica", "", 8)
+pdf.set_text_color(100, 115, 130)
+pdf.set_xy(20, 250)
+pdf.cell(0, 5, "Prepared: June 2026  |  Data: chess.com API + lichess.org API")
+
+# ---- PAGE 2 -- PROFILE ANALYSIS ----
+pdf.add_page()
+
+pdf.h1("01  COMPLETE PROFILE ANALYSIS")
+
+pdf.set_font("Helvetica", "B", 9)
+pdf.set_text_color(*pdf.TEXT_MID)
+pdf.cell(0, 5, "ACCOUNT RATINGS OVERVIEW", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+pdf.ln(1)
+
+cards = [
+    ("Rapid", "2010", "chess.com (scrodingxxf)", pdf.BLUE),
+    ("Rapid", "2000", "chess.com (rk362_2)",     pdf.BLUE),
+    ("Rapid", "1754", "lichess",                  pdf.BLUE),
+    ("Blitz",  "1707", "lichess",                 pdf.PHASE_COLORS[1]),
+]
+y0 = pdf.get_y()
+for i, (lbl, val, sub, col) in enumerate(cards):
+    pdf.stat_card(lbl, val, sub, 10 + i * 48, y0, 46, col)
+pdf.set_y(y0 + 26)
+
+cards2 = [
+    ("Blitz",   "1612", "chess.com best",      pdf.PHASE_COLORS[1]),
+    ("Puzzles", "2212", "chess.com tactics",   pdf.GOLD),
+    ("Puzzles", "2073", "lichess",             pdf.GOLD),
+    ("Daily",   "2009", "chess.com (rk362_2)", pdf.AMBER),
+]
+y0 = pdf.get_y()
+for i, (lbl, val, sub, col) in enumerate(cards2):
+    pdf.stat_card(lbl, val, sub, 10 + i * 48, y0, 46, col)
+pdf.set_y(y0 + 28)
+
+pdf.h2("Game Volume & Activity")
+pdf.simple_table(
+    ["Account", "Platform", "Rapid", "Blitz", "Bullet", "Active Since"],
+    [
+        ["scrodingxxf",       "chess.com", "2132",  "782", "767", "Jun 2024"],
+        ["rahul_kumar_362",   "chess.com", "--",    "--",  "--",  "Feb 2024"],
+        ["rahul_kumar_362_2", "chess.com", "~50",   "~4",  "--",  "Apr 2025"],
+        ["rahul_kumar_362",   "lichess",   "104",   "420", "10",  "Aug 2024"],
+    ],
+    [52, 30, 26, 26, 26, 30],
+)
+
+pdf.h2("Opening Repertoire")
+pdf.simple_table(
+    ["Color", "vs", "Opening Played", "Result Trend"],
+    [
+        ["White", "1...e5",  "Italian Game / Giuoco Piano",      "Good -- keep refining"],
+        ["White", "1...c5",  "Open Sicilian (various)",           "Needs consolidation"],
+        ["White", "1...e6",  "French -- Tarrasch (3.Nd2)",        "OK -- improve plans"],
+        ["White", "1...c6",  "Advance Variation (3.e5)",          "Solid -- continue"],
+        ["Black", "1.e4",    "Sicilian Defense (various lines)",  "Primary -- needs focus"],
+        ["Black", "1.e4",    "Scandinavian / Caro-Kann (occ.)",  "Secondary -- drop one"],
+        ["Black", "1.d4",    "Nimzo-Indian Defense (E43)",        "Good -- keep"],
+        ["Black", "1.d4",    "QGD / Ragozin as backup",          "Add as backup"],
+    ],
+    [18, 18, 80, 74],
+)
+
+col_w = 93
+y_sw = pdf.get_y()
+
+pdf.set_fill_color(240, 253, 244)
+pdf.rect(10, y_sw, col_w, 60, "F")
+pdf.set_fill_color(*pdf.GREEN)
+pdf.rect(10, y_sw, col_w, 7, "F")
+pdf.set_font("Helvetica", "B", 10)
+pdf.set_text_color(*pdf.WHITE)
+pdf.set_xy(10, y_sw + 1)
+pdf.cell(col_w, 5, "  STRENGTHS", align="L")
+
+strengths = [
+    "Puzzle rating 2073-2212 -- strong tactical eye",
+    "Rapid chess at 2000 -- solid calculation",
+    "+400 points gained in 18 months (fast learner)",
+    "Sicilian understanding -- dynamic play intuition",
+    "Aggressive style -- plays for the win",
+    "High accuracy games recorded (85%+)",
+]
+pdf.set_text_color(*pdf.TEXT_DARK)
+pdf.set_font("Helvetica", "", 9)
+for s in strengths:
+    pdf.set_xy(12, pdf.get_y() + 2)
+    pdf.cell(4, 5, "-")
+    pdf.cell(col_w - 8, 5, s)
+    pdf.ln()
+
+wx = 10 + col_w + 4
+pdf.set_fill_color(255, 241, 242)
+pdf.rect(wx, y_sw, col_w, 60, "F")
+pdf.set_fill_color(*pdf.RED)
+pdf.rect(wx, y_sw, col_w, 7, "F")
+pdf.set_font("Helvetica", "B", 10)
+pdf.set_text_color(*pdf.WHITE)
+pdf.set_xy(wx, y_sw + 1)
+pdf.cell(col_w, 5, "  WEAKNESSES (Priority Order)", align="L")
+
+weaknesses = [
+    "Blitz 500+ pts below Rapid -- time pressure",
+    "Black win rate 32% vs White 48%",
+    "King safety issues in middlegame",
+    "Middlegame transition after opening",
+    "Endgame technique (likely undertrained)",
+    "Multiple accounts -- no stable OTB rating",
+]
+pdf.set_text_color(*pdf.TEXT_DARK)
+pdf.set_font("Helvetica", "", 9)
+for w_item in weaknesses:
+    pdf.set_xy(wx + 2, pdf.get_y() + 2)
+    pdf.cell(4, 5, "-")
+    pdf.cell(col_w - 8, 5, w_item)
+    pdf.ln()
+
+pdf.set_y(y_sw + 64)
+
+# ---- PAGE 3 -- REALITY CHECK ----
+pdf.add_page()
+
+pdf.h1("02  THE GRANDMASTER REALITY CHECK")
+
+pdf.info_box(
+    "IMPORTANT: Going from FIDE ~1700 to GM (2500+) in 2-3 years has never been done in recorded chess history. "
+    "This roadmap gives you the fastest possible path -- with honest timelines.",
+    (220, 38, 38))
+
+pdf.h2("FIDE Title Ladder -- Where You Stand")
+pdf.simple_table(
+    ["Title", "Rating Required", "Additional Requirements", "Your Gap", "Est. Timeline"],
+    [
+        ["Club Player",      "< 1600", "--",                           "ALREADY PAST",  "--"],
+        ["Candidate Master", "2200+",  "--",                           "~500 pts",      "12-18 months"],
+        ["FIDE Master",      "2300+",  "--",                           "~600 pts",      "2-3 years"],
+        ["Intl. Master",     "2400+",  "3 IM norms (2450+ perf.)",    "~700 pts",      "4-6 years"],
+        ["GRANDMASTER",      "2500+",  "3 GM norms (2600+ perf.)",    "~800 pts",      "8-12 years"],
+    ],
+    [28, 30, 58, 36, 38],
+    header_color=pdf.DARK_BG,
+)
+
+pdf.h2("Historical Context -- Fastest GMs Ever")
+pdf.body(
+    "Every player who became GM in under 5 years from learning chess started playing at age 5-8:\n"
+    "  Sergey Karjakin -- GM at age 12 (started age 5, was 2000+ FIDE at age 10)\n"
+    "  Magnus Carlsen  -- GM at age 13 (started age 8, was 1907 FIDE at age 10)\n"
+    "  Wei Yi          -- GM at age 13 (started age 5)\n\n"
+    "Starting from FIDE ~1700 and reaching GM in 2-3 years is not possible. However, the roadmap below "
+    "-- followed with full dedication -- represents the fastest realistic path to each milestone."
+)
+
+pdf.h2("Year-by-Year Realistic Targets")
+pdf.simple_table(
+    ["Milestone", "Timeline", "FIDE Target", "chess.com Rapid", "Lichess Blitz"],
+    [
+        ["Opening consolidation + tactics lock-in", "6 months",    "~1800-1900", "2200+", "1900+"],
+        ["Candidate Master (CM)",                   "12-18 months","~2000",      "2300+", "2000+"],
+        ["FIDE Master (FM)",                        "2.5-4 years", "~2200",      "2400+", "2200+"],
+        ["International Master (IM)",               "4-7 years",   "~2400",      "2500+", "2400+"],
+        ["Grandmaster (GM)",                        "8-12 years",  "2500+",      "2600+", "2500+"],
+    ],
+    [68, 28, 24, 32, 28],
+)
+
+pdf.h2("GM Norm Requirements")
+pdf.body("To earn the GM title you need ALL of the following:")
+pdf.numbered([
+    "FIDE rating of 2500 or above (sustained, not a one-time spike)",
+    "Three separate GM norms -- each requires a performance rating of 2600+ in a FIDE-rated "
+    "tournament that includes at least 5 titled players (GMs/IMs) and meets specific federation requirements",
+    "Each norm tournament typically spans 9-11 rounds over multiple days with classical time controls",
+    "Norm tournaments must be separate events (cannot earn all 3 norms in one tournament)",
+])
+
+pdf.info_box(
+    "BOTTOM LINE: The goal is not to rush to GM -- it is to build chess understanding so deep that you become "
+    "dangerous at every rating level you pass through. Each phase below makes you a significantly stronger player.",
+    pdf.BLUE)
+
+# ---- PAGE 4 -- PHASE 1 ----
+pdf.add_page()
+
+pdf.h1("03  THE ROADMAP -- PHASE BY PHASE")
+
+pdf.phase_box(1, "FOUNDATION LOCKDOWN", "chess.com 2200+  |  Lichess 1900+  |  FIDE ~1800", pdf.PHASE_COLORS[0])
+pdf.body("Duration: Months 1-6\nFocus: Lock in your repertoire, sharpen tactics speed, build endgame foundations, debut OTB.")
+
+pdf.h2("Opening Plan -- Simplify and Deepen", pdf.PHASE_COLORS[0])
+
+pdf.h3("As White (1.e4):", pdf.BLUE)
+pdf.simple_table(
+    ["Opponent Response", "Your Weapon", "Priority"],
+    [
+        ["1...e5",  "Italian Game (continue) + begin Ruy Lopez",      "HIGH"],
+        ["1...c5",  "Open Sicilian -- pick Najdorf/Classical and STAY","HIGH"],
+        ["1...e6",  "Tarrasch Variation (3.Nd2) -- clean structure",   "MEDIUM"],
+        ["1...c6",  "Advance Variation (3.e5) -- already playing this","MEDIUM"],
+        ["1...d5",  "Scandinavian Advance (2.e5) or Exchange",         "LOW"],
+    ],
+    [38, 110, 32],
+    header_color=pdf.PHASE_COLORS[0],
+)
+
+pdf.h3("As Black:", pdf.BLUE)
+pdf.simple_table(
+    ["Opponent Plays", "Your Weapon", "Action Required"],
+    [
+        ["1.e4",  "Sicilian Najdorf (6...a6) -- English Attack line", "DRILL -- study 15 GM games"],
+        ["1.d4",  "Nimzo-Indian (E43) -- keep as primary",            "Refine -- add Ragozin backup"],
+        ["1.c4",  "Nimzo/English -- same structures as Nimzo",        "Extend Nimzo knowledge"],
+        ["1.Nf3", "Transpose to Nimzo or QGD",                       "Learn key transpositional moves"],
+    ],
+    [26, 90, 64],
+    header_color=pdf.PHASE_COLORS[0],
+)
+pdf.body("For each opening: study 15-20 master games. Goal is NOT memorising moves -- understand the PLANS and pawn structures.")
+
+pdf.h2("Tactics Training -- Speed Upgrade", pdf.PHASE_COLORS[0])
+pdf.bullet([
+    "30 puzzles per day minimum on lichess (Puzzle Storm + Rated Puzzles)",
+    "Focus areas: Back-rank mates, piece coordination, defensive resources, pins/skewers under pressure",
+    "Target: 2300+ puzzle rating on lichess by Month 6",
+    "ChessTempo: drill 'King Safety' and 'Defensive Resources' theme categories specifically",
+])
+
+pdf.h2("Endgame Study Plan", pdf.PHASE_COLORS[0])
+pdf.body("Spend 20% of total study time here. Most games at 1700-2000 are decided in endgames players have not studied.")
+pdf.simple_table(
+    ["Priority", "Topic", "Resource", "Timeframe"],
+    [
+        ["1", "K+P endgames: opposition, key squares, pawn races",   "Silman Endgame Course Ch.3", "Weeks 1-3"],
+        ["2", "Rook endgames: Lucena, Philidor, active rook",        "Silman Endgame Course Ch.4", "Weeks 4-6"],
+        ["3", "Queen vs Pawn endgames",                              "Silman Endgame Course Ch.3", "Week 7"],
+        ["4", "Basic minor piece endings",                           "Silman Endgame Course Ch.4", "Weeks 8-10"],
+    ],
+    [12, 80, 58, 30],
+    header_color=pdf.PHASE_COLORS[0],
+)
+
+pdf.h2("Game Schedule", pdf.PHASE_COLORS[0])
+pdf.bullet([
+    "Play 3-5 RAPID games per day (15+10 or 10+5 on lichess) -- NOT blitz",
+    "After EVERY loss: spend 10 minutes with engine -- find the FIRST mistake only, not all mistakes",
+    "Reduce blitz to weekends only until rapid rating stabilises above 2200",
+    "Start a personal PGN database -- tag every game: opening, phase of error, result",
+])
+
+# ---- PAGE 5 -- PHASE 2 ----
+pdf.add_page()
+
+pdf.phase_box(2, "POSITIONAL CHESS & OTB ENTRY", "FIDE ~1900-2000  |  CM Candidate", pdf.PHASE_COLORS[1])
+pdf.body("Duration: Months 7-18\nFocus: Positional chess understanding, OTB tournaments, Candidate Master title.")
+
+pdf.h2("What Changes at 2000 FIDE", pdf.PHASE_COLORS[1])
+pdf.body(
+    "Players above 2000 FIDE don't just calculate better -- they see positional features you currently miss:\n"
+    "weak squares, pawn structure implications, piece activity long-term, prophylaxis.\n"
+    "This is the skill you build in Phase 2."
+)
+
+pdf.h2("Positional Study Plan", pdf.PHASE_COLORS[1])
+pdf.simple_table(
+    ["Topic", "What to Learn", "Duration"],
+    [
+        ["Isolated Queen's Pawn",  "IQP attack plans, blockade techniques, minority attack",  "2 weeks"],
+        ["Hanging Pawns",          "Dynamic potential vs structural weakness",                  "2 weeks"],
+        ["Pawn Chains (French)",   "Attack the base, piece activity in closed positions",      "2 weeks"],
+        ["Carlsbad Structure",     "Minority attack, weak c6 pawn exploitation",               "2 weeks"],
+        ["Open Files & 7th Rank",  "Rook activation, invasion, doubling rooks",                "2 weeks"],
+        ["Prophylaxis",            "Ask 'what does my opponent want?' before every move",      "Ongoing"],
+    ],
+    [48, 100, 32],
+    header_color=pdf.PHASE_COLORS[1],
+)
+
+pdf.h2("Enter OTB Chess -- This is Critical", pdf.PHASE_COLORS[1])
+pdf.info_box(
+    "Online chess and OTB chess are different sports. FIDE rating is what earns norms and the title. "
+    "Your online rapid 2000 will translate to approximately FIDE 1600-1750 at OTB debut -- this is completely normal.",
+    pdf.AMBER)
+pdf.bullet([
+    "Register with your national chess federation (must be a FIDE member federation)",
+    "Enter your first FIDE-rated tournament -- classical time control (90 min + 30 sec/move increment)",
+    "Join a local chess club and play rated monthly games",
+    "Target: 20-30 rated OTB games in Year 1 of playing OTB",
+    "India targets: Delhi Open, Mumbai International, Chennai Open (Sathyam), Commonwealth Championships",
+])
+
+pdf.h2("Database and Game Analysis", pdf.PHASE_COLORS[1])
+pdf.bullet([
+    "Build personal PGN database -- tag every game: opening, phase where you went wrong, result",
+    "Monthly review: find recurring patterns in your losses",
+    "If you lose 3+ games in the same position type -- that area needs urgent repair",
+    "Study opponent games before rated events (tournament preparation begins here)",
+])
+
+pdf.h2("Blitz Gap -- Root Cause Fix", pdf.PHASE_COLORS[1])
+pdf.body(
+    "The 500+ point gap between rapid and blitz is a calculation-speed problem, not a blitz problem. "
+    "Fix it by making your calculation automatic in rapid first:"
+)
+pdf.bullet([
+    "Practice 3+2 and 5+3 increment games -- NOT pure 3+0 blitz (increment builds clock habits)",
+    "Set a rule: never spend more than 3 minutes on a single move in rapid",
+    "Never go below 30 seconds without simplifying OR entering a known endgame structure",
+    "Blitz improvement follows naturally as rapid positions become more familiar",
+])
+
+# ---- PAGE 6 -- PHASE 3 ----
+pdf.add_page()
+
+pdf.phase_box(3, "EXPERT LEVEL & FIRST NORMS", "FIDE ~2000-2200  |  CM/FM Title", pdf.PHASE_COLORS[2])
+pdf.body("Duration: Months 18-36\nFocus: Deep opening prep, coach work, FM title pursuit, first IM norm attempts.")
+
+pdf.h2("The 2000-2200 Wall", pdf.PHASE_COLORS[2])
+pdf.body(
+    "This is where most serious players plateau for years. Breaking through requires three upgrades:\n"
+    "1. Opening preparation at depth -- not just knowing plans, but knowing critical lines 15-20 moves deep\n"
+    "2. Calculation discipline -- verifying tactical lines completely, not stopping at 'looks good'\n"
+    "3. Time management -- 90+ minute classical games require clock strategy, not just chess moves"
+)
+
+pdf.h2("Get a Coach", pdf.PHASE_COLORS[2])
+pdf.info_box(
+    "From Month 18 onwards, a strong coach (IM or GM level) accelerates improvement more than any other factor. "
+    "A good coach finds the TYPE of mistake you repeatedly make -- something engines alone cannot tell you.",
+    pdf.PHASE_COLORS[2])
+pdf.bullet([
+    "Platforms: chess.com coaches, Chess24, ChessBase India coaches",
+    "Cost: $50-150/hour for IM/GM level coaching",
+    "Session focus: deep game analysis, opening novelty prep for your lines, tournament preparation",
+    "Frequency: 2-4 sessions per month minimum",
+    "Ideal: Find a coach whose opening repertoire overlaps with yours",
+])
+
+pdf.h2("Tournament Strategy for Norms", pdf.PHASE_COLORS[2])
+pdf.bullet([
+    "Play in Open tournaments with FIDE-rated players -- international opens are best",
+    "You need to OUTPERFORM your rating -- playing against 200-400 pts stronger opponents earns norm progress",
+    "CM norm: performance rating of 2200+ in eligible FIDE events",
+    "FM norm: performance rating of 2300+ in eligible FIDE events",
+    "Target: 2-3 international opens per year from Year 2 onward",
+    "Travel to strong open tournaments where titled players participate",
+])
+
+pdf.h2("Study Intensity at This Phase", pdf.PHASE_COLORS[2])
+pdf.simple_table(
+    ["Activity", "Daily Time", "Notes"],
+    [
+        ["Opening lines (theory + master games)", "60 min", "Focus on YOUR repertoire only"],
+        ["Tactics + calculation exercises",       "60 min", "Harder puzzles, calculation chains"],
+        ["Endgame study",                         "45 min", "Dvoretsky's Endgame Manual"],
+        ["Own game analysis",                     "45 min", "With engine -- find patterns in errors"],
+        ["GM game study (annotated)",             "30 min", "Games in your specific openings"],
+    ],
+    [76, 26, 78],
+    header_color=pdf.PHASE_COLORS[2],
+)
+pdf.body("Total: ~4 hours/day. This is non-negotiable for the GM path. Top juniors spend 6-8 hours/day.")
+
+pdf.phase_box(4, "BEYOND PHASE 3 -- IM & GM PATH", "FIDE 2300+  |  IM Norms  |  GM Norms", pdf.PHASE_COLORS[3])
+pdf.body(
+    "Once you reach FM level (~2300 FIDE), the path to IM and GM becomes clearer but harder:\n\n"
+    "IM Path (Years 4-7): Three IM norms at 2450+ performance. Requires dedicated tournament schedule "
+    "(4-6 major open tournaments/year), deep opening preparation against titled players, and psychological "
+    "resilience to perform under pressure.\n\n"
+    "GM Path (Years 8-12): Three GM norms at 2600+ performance. At this level you compete against other "
+    "titled players. Requires: a GM-level coach, professional tournament schedule, computer-assisted opening "
+    "preparation at the highest level, and physical and psychological training as a full-time pursuit."
+)
+
+# ---- PAGE 7 -- SCHEDULE & RESOURCES ----
+pdf.add_page()
+
+pdf.h1("04  DAILY TRAINING SCHEDULE")
+
+pdf.h2("Weekday Schedule (Minimum 2.5 Hours)")
+pdf.simple_table(
+    ["Time Block", "Activity", "Platform/Resource", "Duration"],
+    [
+        ["Morning",   "30 Rated Puzzles",              "lichess Puzzle + ChessTempo",  "30 min"],
+        ["Afternoon", "Opening Study (master games)",  "lichess Studies / ChessBase",  "45 min"],
+        ["Afternoon", "Review yesterday's losses",     "Engine + personal PGN DB",     "45 min"],
+        ["Evening",   "Endgame Study",                 "Silman / Dvoretsky",           "30 min"],
+    ],
+    [26, 62, 60, 22],
+)
+
+pdf.h2("Weekend Schedule")
+pdf.simple_table(
+    ["Activity", "Duration", "Notes"],
+    [
+        ["Play 3-5 rapid games (15+10 or 10+5)", "2-3 hours", "Focus -- no distractions"],
+        ["Full game review with engine",          "1 hour",    "Find patterns, not just blunders"],
+        ["Positional study (book chapter)",       "1 hour",    "Silman, Nimzowitsch, or similar"],
+        ["Opening line review and update",        "45 min",    "Add new lines if lost to novelty"],
+    ],
+    [70, 26, 84],
+)
+
+pdf.h2("Weekly Targets by Phase")
+pdf.simple_table(
+    ["Phase", "Puzzles/week", "Rapid Games/week", "Study Hrs/week", "OTB Games/month"],
+    [
+        ["Phase 1 (Months 1-6)",   "200+", "20-30", "15-18", "0 (online only)"],
+        ["Phase 2 (Months 7-18)",  "150+", "15-20", "20-25", "3-5 rated OTB"],
+        ["Phase 3 (Months 18-36)", "100+", "10-15", "25-30", "5-8 rated OTB"],
+        ["Beyond (Year 3+)",       "100+", "10",    "30+",   "8-10 rated OTB"],
+    ],
+    [44, 28, 36, 32, 40],
+)
+
+pdf.h1("05  RECOMMENDED RESOURCES")
+
+pdf.h2("Books -- In Order of Priority")
+pdf.simple_table(
+    ["#", "Title", "Author", "Use When"],
+    [
+        ["1", "How to Reassess Your Chess (4th ed.)", "Jeremy Silman",    "Phase 1-2 -- bridges 1700 to 2200"],
+        ["2", "Silman's Complete Endgame Course",      "Jeremy Silman",    "Phase 1 -- systematic endgames"],
+        ["3", "My System",                             "Aaron Nimzowitsch","Phase 2 -- positional foundations"],
+        ["4", "Zurich 1953",                           "David Bronstein",  "Phase 2 -- middlegame thinking"],
+        ["5", "Dvoretsky's Endgame Manual",            "Mark Dvoretsky",   "Phase 2-3 -- deep endgames"],
+        ["6", "Endgame Virtuoso (Karpov)",             "Tibor Karolyi",    "Phase 3 -- GM endgame technique"],
+        ["7", "Positional Decision Making",            "Boris Gelfand",    "Phase 3 -- grandmaster thinking"],
+    ],
+    [10, 74, 46, 60],
+)
+
+pdf.h2("Online Platforms")
+pdf.simple_table(
+    ["Platform", "Best Use", "Cost"],
+    [
+        ["lichess.org",      "Games, puzzles, studies, analysis board",     "Free"],
+        ["chess.com",        "Games, tactics trainer, opening explorer",    "Free / $15-30/mo"],
+        ["ChessTempo",       "Tactics by theme, opening practice",          "Free / $30/yr"],
+        ["ChessBase Online", "Opening explorer, master game database",      "$15/mo"],
+        ["ChessBase (PC)",   "Personal PGN database, deep analysis",        "$99-200 one-time"],
+    ],
+    [44, 110, 36],
+)
+
+pdf.h2("Free Video Resources (YouTube)")
+pdf.bullet([
+    "Daniel Naroditsky 'Speed Run' series -- best instructional chess content available online (2000 to 2700 style)",
+    "GothamChess 'Road to GM' series -- covers common mistakes at each rating level",
+    "John Bartholomew 'Chess Fundamentals' -- excellent for Phase 1 positional thinking",
+    "Agadmator's Chess Channel -- daily GM game analysis, great for opening pattern recognition",
+])
+
+# ---- PAGE 8 -- FIXES & MILESTONES ----
+pdf.add_page()
+
+pdf.h1("06  TARGETED WEAKNESS FIXES")
+
+pdf.h2("FIX #1 -- Black Repertoire (Most Urgent)")
+pdf.body("Your Black win rate is 32% vs 48% as White. This is the single highest-leverage improvement available.")
+pdf.simple_table(
+    ["Problem", "Solution", "Timeline"],
+    [
+        ["Playing multiple Sicilian sub-systems",  "Pick ONE: Najdorf English Attack -- drill to 20 moves depth", "Month 1-2"],
+        ["Scandinavian as secondary weapon",        "Drop it -- too many openings dilutes preparation time",       "Month 1"],
+        ["No backup vs 1.d4 when Nimzo avoided",   "Add Ragozin (2...Nf6 3...Bb4) as your 1.d4 backup",         "Month 3-4"],
+        ["Losing Sicilian structures as White too", "Study your Sicilian lines as BOTH colours",                  "Month 2-3"],
+    ],
+    [56, 96, 28],
+)
+
+pdf.h2("FIX #2 -- King Safety")
+pdf.bullet([
+    "Drill 'King Safety' puzzle category on ChessTempo -- 50 puzzles per week in this theme",
+    "Learn the rule: if opponent has bishops pointing at your king + open files -> castle the other side",
+    "Study Classical Attack vs Defence patterns (Bronstein's Zurich 1953 has excellent examples)",
+    "Before castling: count attackers near king, count defenders -- never castle into a storm",
+    "Jeremy Silman's 'How to Reassess Your Chess' chapters on king safety are directly applicable",
+])
+
+pdf.h2("FIX #3 -- Blitz Time Management")
+pdf.bullet([
+    "Do NOT chase blitz rating -- it will follow naturally as rapid positions become familiar",
+    "Practice increment formats (3+2, 5+3) before playing pure 3+0 blitz",
+    "Rule in rapid: maximum 3 minutes per move. If below 2 min: SIMPLIFY or transpose to endgame",
+    "Never play blitz when tired -- it embeds bad calculation habits into muscle memory",
+])
+
+pdf.h2("FIX #4 -- Middlegame Transition")
+pdf.bullet([
+    "After every opening phase: write down what YOUR plan should be in the next 3 moves",
+    "Study imbalances: when you have bishop pair, IQP, space advantage -- what do you DO with it?",
+    "Silman's 'How to Reassess Your Chess' teaches imbalance thinking -- directly addresses this weakness",
+    "Study 20 GM games where your specific opening structures arise -- focus on moves 15-30",
+])
+
+pdf.h1("07  YEAR-BY-YEAR MILESTONE TRACKER")
+
+pdf.h2("Year 1 Milestones (End of 2026)")
+pdf.simple_table(
+    ["Goal", "Target", "Current Status"],
+    [
+        ["chess.com Rapid (scrodingxxf)", "2200+",             "CURRENT: 2010"],
+        ["Lichess Blitz",                 "1900+",             "CURRENT: 1707"],
+        ["FIDE OTB debut",                "~1750",             "NOT STARTED"],
+        ["Opening repertoire",            "Fully consolidated","CONSOLIDATING"],
+        ["Rook endgames",                 "Fully mastered",    "LIKELY WEAK"],
+        ["OTB games played",              "20+ rated",         "0 CURRENTLY"],
+        ["Puzzle rating (lichess)",       "2300+",             "CURRENT: 2073"],
+    ],
+    [78, 44, 58],
+)
+
+pdf.h2("Year 2 Milestones (End of 2027)")
+pdf.simple_table(
+    ["Goal", "Target", "Notes"],
+    [
+        ["FIDE Rating",            "~2000",              "CM Candidate level"],
+        ["CM Title",               "Achieved",           "Requires rated OTB play"],
+        ["OTB tournaments/year",   "4-6 open events",    "Regular tournament schedule"],
+        ["First IM norm attempt",  "Performance ~2450+", "Ambitious but possible"],
+        ["Coach",                  "Working with IM/GM", "Start Month 18"],
+        ["Study hours/day",        "3-4 hours",          "Increase from Phase 1 commitment"],
+    ],
+    [78, 44, 58],
+)
+
+pdf.h2("Year 3 Milestones (End of 2028)")
+pdf.simple_table(
+    ["Goal", "Target", "Notes"],
+    [
+        ["FIDE Rating",       "~2100-2200",         "FM title range"],
+        ["FM Title",          "Attempt / Achieve",  "Requires FM norm or 2300 FIDE"],
+        ["IM Norms",          "1 norm achieved",    "If tournament schedule consistent"],
+        ["Study hours/day",   "4+ hours",           "Professional-level dedication"],
+        ["Opening depth",     "20 moves all lines", "Prepared like a titled player"],
+    ],
+    [78, 44, 58],
+)
+
+# ---- BACK COVER ----
+pdf.add_page()
+
+pdf.set_fill_color(*pdf.DARK_BG)
+pdf.rect(0, 0, 210, 297, "F")
+
+sq = 6
+for col in range(35):
+    for row in range(5):
+        if (col + row) % 2 == 0:
+            pdf.set_fill_color(22, 33, 54)
+        else:
+            pdf.set_fill_color(18, 27, 44)
+        pdf.rect(col * sq, row * sq, sq, sq, "F")
+
+pdf.set_fill_color(*pdf.GOLD)
+pdf.rect(0, 30, 210, 3, "F")
+
+pdf.set_font("Helvetica", "B", 28)
+pdf.set_text_color(*pdf.GOLD)
+pdf.set_xy(0, 50)
+pdf.cell(210, 14, "THE GRANDMASTER FORMULA", align="C")
+
+pdf.set_font("Helvetica", "", 12)
+pdf.set_text_color(180, 190, 210)
+pdf.set_xy(0, 68)
+pdf.cell(210, 8, "Every GM in history followed these same principles:", align="C")
+
+pillars = [
+    ("TACTICS",   "Puzzle 2073-2212\nshows you have the eye.\nNow build the SPEED."),
+    ("OPENINGS",  "Consolidate to ONE\ndeep repertoire per\ncolour. Depth wins."),
+    ("STRATEGY",  "Pawn structures,\nweak squares,\nprophylaxis: 1700-2200."),
+    ("ENDGAMES",  "Games are lost here\nat your level. Study\nthis like tactics."),
+    ("OTB PLAY",  "Online means nothing.\nFIDE norms are earned\nOTB. Start NOW."),
+]
+
+bw = 34
+for i, (title, body_text) in enumerate(pillars):
+    bx = 10 + i * 38
+    by = 85
+    pdf.set_fill_color(30, 43, 68)
+    pdf.rect(bx, by, bw, 55, "F")
+    pdf.set_fill_color(*pdf.GOLD)
+    pdf.rect(bx, by, bw, 7, "F")
+    pdf.set_font("Helvetica", "B", 7.5)
+    pdf.set_text_color(*pdf.DARK_BG)
+    pdf.set_xy(bx, by + 1)
+    pdf.cell(bw, 5, title, align="C")
+    pdf.set_font("Helvetica", "", 7.5)
+    pdf.set_text_color(200, 210, 225)
+    pdf.set_xy(bx + 1, by + 10)
+    pdf.multi_cell(bw - 2, 5, body_text)
+
+pdf.set_draw_color(*pdf.GOLD)
+pdf.set_line_width(0.5)
+pdf.line(30, 155, 180, 155)
+
+pdf.set_font("Helvetica", "I", 14)
+pdf.set_text_color(*pdf.GOLD_LIGHT)
+pdf.set_xy(15, 162)
+pdf.multi_cell(180, 9,
+    '"The goal is not to rush to Grandmaster.\nIt is to become so strong that the title is inevitable."',
+    align="C")
+
+pdf.line(30, 192, 180, 192)
+
+pdf.set_fill_color(25, 38, 60)
+pdf.rect(20, 200, 170, 60, "F")
+pdf.set_fill_color(*pdf.GOLD)
+pdf.rect(20, 200, 170, 7, "F")
+pdf.set_font("Helvetica", "B", 10)
+pdf.set_text_color(*pdf.DARK_BG)
+pdf.set_xy(20, 202)
+pdf.cell(170, 4, "YOUR ROADMAP SUMMARY", align="C")
+
+summary_items = [
+    "Current Level: FIDE ~1600-1700  (chess.com Rapid 2010, Lichess Blitz 1707)",
+    "Year 1 Target: FIDE ~1800-1900, chess.com 2200+, begin OTB rated play",
+    "Year 2 Target: FIDE ~2000, Candidate Master (CM) title",
+    "Year 3 Target: FIDE ~2100-2200, FIDE Master (FM) pursuit begins",
+    "Long-term: IM in 4-7 years, GM in 8-12 years with full dedication",
+    "Biggest lever right now: Fix Black repertoire + start FIDE OTB tournaments",
+]
+pdf.set_font("Helvetica", "", 9)
+pdf.set_text_color(200, 215, 230)
+for item in summary_items:
+    pdf.set_xy(24, pdf.get_y() + 2)
+    pdf.cell(4, 5, "-")
+    pdf.cell(160, 5, item)
+    pdf.ln()
+
+pdf.set_font("Helvetica", "", 7.5)
+pdf.set_text_color(90, 105, 125)
+pdf.set_xy(0, 262)
+pdf.cell(210, 5,
+    "Generated June 2026  |  Data: chess.com API (scrodingxxf, rahul_kumar_362, rahul_kumar_362_2) + lichess.org API (rahul_kumar_362)",
+    align="C")
+
+out_path = r"C:\roadtoGrandMaster\Scrodinger_GM_Roadmap.pdf"
+pdf.output(out_path)
+print("PDF saved to: " + out_path)
+print("Pages: " + str(pdf.page))

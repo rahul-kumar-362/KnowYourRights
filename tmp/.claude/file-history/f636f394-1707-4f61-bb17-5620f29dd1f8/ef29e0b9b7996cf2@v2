@@ -1,0 +1,11 @@
+import ssl
+
+import websockets
+
+
+async def open_conn(base_url, headers):
+    return await websockets.connect(
+        base_url,
+        extra_headers=headers,
+        ssl=ssl.SSLContext() if base_url.startswith("wss://") else None,  # FLAG: PY-SSL-001
+    )

@@ -1,0 +1,8 @@
+import ssl
+
+import websockets
+
+
+async def open_conn(base_url):
+    ctx = ssl.create_default_context()
+    return await websockets.connect(base_url, ssl=ctx)

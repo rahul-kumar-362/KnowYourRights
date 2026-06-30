@@ -1,0 +1,92 @@
+"""Safe repository checkout.
+
+Replaces the legacy ``os.system(f"git clone ...{repo}...")`` (shell injection,
+no timeout, no success check). The repo spec is strictly validated, the command
+is a fixed argv list with ``shell=False`` and a timeout, and success is verified
+with ``git rev-parse`` rather than a bare directory-exists check.
+"""
+
+from __future__ import annotations
+
+import re
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
+
+_REPO_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+
+
+class GitError(RuntimeError):
+    pass
+
+
+@dataclass
+class CloneResult:
+    path: Path
+    ref: Optional[str]
+    head_sha: str
+    updated: bool
+
+
+def _validate(repo: str) -> None:
+    if not _REPO_RE.match(repo) or ".." in repo:
+        raise GitError(f"invalid repo spec: {repo!r} (expected 'owner/name')")
+
+
+def _run(args, timeout):
+    try:
+        return subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        raise GitError(f"git timed out: {' '.join(args)}") from exc
+    except FileNotFoundError as exc:  # git not installed
+        raise GitError("git executable not found on PATH") from exc
+
+
+def _run_checked(args, timeout):
+    result = _run(args, timeout)
+    if result.returncode != 0:
+        raise GitError(f"git failed ({result.returncode}): {result.stderr.strip()[:300]}")
+    return result
+
+
+def clone_or_update(
+    repo: str,
+    dest_root,
+    *,
+    ref: Optional[str] = None,
+    update: bool = False,
+    timeout: float = 300.0,
+    depth: Optional[int] = 1,
+    host: str = "https://github.com",
+) -> CloneResult:
+    _validate(repo)
+    dest = Path(dest_root) / repo.split("/")[-1]
+    updated = False
+
+    if dest.exists():
+        inside = _run(["git", "-C", str(dest), "rev-parse", "--is-inside-work-tree"], timeout)
+        if inside.returncode != 0:
+            raise GitError(f"{dest} exists but is not a git work tree")
+        if update:
+            fetch = ["git", "-C", str(dest), "fetch", "origin"]
+            if depth:
+                fetch += ["--depth", str(depth)]
+            _run_checked(fetch, timeout)
+            if ref:
+                _run_checked(["git", "-C", str(dest), "checkout", ref], timeout)
+            updated = True
+    else:
+        url = f"{host}/{repo}.git"
+        args = ["git", "clone"]
+        if depth:
+            args += ["--depth", str(depth)]
+        if ref:
+            args += ["--branch", ref]
+        args += [url, str(dest)]
+        _run_checked(args, timeout)
+
+    head = _run(["git", "-C", str(dest), "rev-parse", "HEAD"], timeout)
+    if head.returncode != 0:
+        raise GitError(f"clone verification failed for {repo}")
+    return CloneResult(path=dest, ref=ref, head_sha=head.stdout.strip(), updated=updated)

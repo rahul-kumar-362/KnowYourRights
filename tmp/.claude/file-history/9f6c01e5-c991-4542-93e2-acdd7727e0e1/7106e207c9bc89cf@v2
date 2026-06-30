@@ -1,0 +1,169 @@
+# Chia DataLayer — SSRF via unauthenticated on-chain mirror coins (CWE-918)
+
+> **Program:** hackerone.com/chia_network
+> **Scope:** chia-blockchain 2.1.x (supported per SECURITY.md)
+> **Asset:** chia-blockchain (source)
+> **Weakness:** CWE-918 — Server-Side Request Forgery
+> **Severity:** Medium
+> **Status:** Draft — verify Chia HackerOne asset list + scope before submitting
+
+---
+
+## Title
+
+DataLayer: attacker publishes on-chain mirror coin with arbitrary URL; victim node issues unauthenticated outbound HTTP GET to that URL (SSRF, CWE-918)
+
+## Weakness
+
+CWE-918 — Server-Side Request Forgery (SSRF)
+
+## Severity
+
+Medium
+
+## Summary
+
+The Chia DataLayer mirror mechanism is intentionally permissionless: any on-chain actor
+can publish a mirror coin for any store launcher_id without owning that store. Victim nodes
+that subscribe to (or own) that store automatically ingest the mirror's URL and later issue
+outbound HTTP GET requests to it during their sync loop. No scheme allowlist, no
+private/link-local IP filter, and no DNS-rebinding protection exist anywhere on that
+code path, so a remote attacker can coerce a DataLayer node into making HTTP requests
+to arbitrary internal addresses, including cloud metadata endpoints
+(e.g. `http://169.254.169.254/latest/meta-data/...`).
+
+## Vulnerability Details
+
+### Source — anyone-can-create mirror coins
+
+`chia/wallet/db_wallet/db_wallet_puzzles.py:90-94`:
+
+```python
+def create_mirror_puzzle() -> Program:
+    return P2_PARENT.curry(1)   # fixed, no owner key, no signature
+```
+
+A mirror coin is a standard `P2_PARENT.curry(1)` puzzle; no relationship to the store
+owner is required. The CREATE_COIN memo layout is `[launcher_id, url_1, url_2, ...]`.
+
+### Ingestion — zero URL validation
+
+`chia/wallet/db_wallet/db_wallet_puzzles.py:107-109`:
+
+```python
+launcher_id = memos[0]
+urls = [bytes(m) for m in memos[1:]]   # raw bytes from on-chain, no validation
+return launcher_id, urls
+```
+
+`chia/data_layer/data_layer_wallet.py:773-796` (`coin_added()`): checks only
+`is_launcher_tracked(launcher_id)` (the victim is subscribed to that store), then stores
+`Mirror.decode_urls(urls)` (plain `bytes.decode("utf-8")`, no scheme/IP check) via
+`dl_store.add_mirror()`.
+
+### Propagation — periodic sync writes attacker URLs into subscriptions table
+
+`chia/data_layer/data_layer.py:953-959` (`update_subscriptions_from_wallet()`):
+
+```python
+mirrors = await self.wallet_rpc.dl_get_mirrors(store_id=store_id)
+for mirror in mirrors:
+    await self.data_store.update_subscriptions_from_wallet(
+        store_id=store_id, servers=mirror.urls, ...)
+```
+
+### Sink — unauthenticated outbound GET
+
+`chia/data_layer/download_data.py:311-318` (`http_download()`):
+
+```python
+async with aiohttp.ClientSession() as session:
+    async with session.get(
+        server_info.url + "/" + filename,   # server_info.url is attacker-controlled
+        headers=headers,
+        timeout=timeout,
+        proxy=proxy_url,
+    ) as resp:
+```
+
+`server_info.url` comes verbatim from the on-chain memo. `filename` is a fixed-format
+`{store_id}-{node_hash}-delta-{gen}-v1.0.dat` string — the path suffix is constrained,
+but the scheme, host, port, and path prefix are fully attacker-controlled.
+aiohttp follows redirects by default, so a `30x` from the attacker-controlled host to any
+internal URL is honored.
+
+There is no scheme allowlist, no loopback/private-IP filter, and no DNS-rebinding
+protection anywhere in `download_data.py`, `data_layer.py`, or `data_store.py`
+(verified by searching for `urlparse`, `is_private`, `169.254`, `scheme` in those files).
+
+## Steps to Reproduce
+
+1. Set up a Chia full node + DataLayer service (version 2.1.x). Subscribe it to a store
+   with launcher_id `L` (`chia data subscribe L --url http://trusted.example/`).
+
+2. On any wallet (no relationship to L), spend a coin on-chain producing a CREATE_COIN
+   to the mirror puzzle hash with memos `[L, b"http://169.254.169.254"]`:
+
+   ```python
+   # sketch — full solution tx omitted
+   memo_list = [L_bytes32, b"http://169.254.169.254"]
+   # create spend bundle targeting mirror_puzzle_hash with amount=1 mojo
+   ```
+
+3. After the victim node confirms the block:
+   - `DataLayerWallet.coin_added()` stores the mirror.
+   - `periodically_manage_data()` (60 s cycle) runs `update_subscriptions_from_wallet()`,
+     which writes `http://169.254.169.254` into the subscriptions table for store L.
+   - `fetch_and_validate()` calls `insert_from_delta_file()` → `http_download()`:
+     issues `GET http://169.254.169.254/…-delta-…-v1.0.dat` from the victim node.
+
+4. Observe the outbound connection in network traffic / node debug logs.
+
+### Gating condition
+
+The victim must be subscribed to (or own) a store for the given `launcher_id`. This is
+the routine DataLayer operating state. An attacker who does not already know the victim's
+subscribed stores can publish their own store, wait for the victim to subscribe (e.g.
+via social means / marketplace listings), and then publish mirror coins for that store.
+
+## Impact
+
+Blind SSRF. The GET response is written to a size-capped file
+(`max_delta_file_size`, default 250 MiB) and validated as a delta tree, so response
+contents are not directly returned to the attacker. Impact is:
+
+- **Internal service probing / port scanning:** force the node to issue GET requests to
+  arbitrary internal hosts and ports; connection success/failure and HTTP status codes
+  leak to node logs visible to an attacker who can read them.
+- **Cloud metadata endpoint access:** on AWS/GCP/Azure, `http://169.254.169.254/...`
+  can yield instance metadata including IAM credentials if the response path is
+  reachable with a redirect.
+- **Forced outbound connections:** can trigger firewalls/WAF/IDS rules or deplete
+  connection pools on internal services.
+
+## Remediation
+
+Validate mirror URLs before storing and before fetching:
+
+1. In `Mirror.decode_urls()` or in `coin_added()`, enforce `scheme in {"http", "https"}`,
+   reject loopback addresses (`127.0.0.0/8`, `::1`), link-local (`169.254.0.0/16`,
+   `fe80::/10`), and RFC-1918 private ranges.
+2. In `http_download()`, add a hostname-resolution step before the GET and apply the same
+   private-IP filter to the resolved IP (to prevent DNS rebinding).
+3. Set `allow_redirects=False` (or apply the IP filter to redirect targets) in
+   `aiohttp.ClientSession.get()`.
+
+## References
+
+- CWE-918: https://cwe.mitre.org/data/definitions/918.html
+- OWASP SSRF: https://owasp.org/www-community/attacks/Server_Side_Request_Forgery
+- SSRF prevention cheatsheet: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+
+## Affected Code (line references, chia-blockchain 2.1.x)
+
+| File | Lines | Role |
+|---|---|---|
+| `chia/wallet/db_wallet/db_wallet_puzzles.py` | 90-94, 107-109 | Mirror puzzle creation; URL extraction from memo |
+| `chia/data_layer/data_layer_wallet.py` | 773-796 | `coin_added()` — ingests mirror URLs with no validation |
+| `chia/data_layer/data_layer.py` | 953-959 | `update_subscriptions_from_wallet()` — propagates to subscriptions |
+| `chia/data_layer/download_data.py` | 311-318 | `http_download()` — SSRF sink |

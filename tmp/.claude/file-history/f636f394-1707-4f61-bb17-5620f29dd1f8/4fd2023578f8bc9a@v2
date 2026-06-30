@@ -1,0 +1,18 @@
+# Engagement scope. Out-of-scope always wins over in-scope. Paths are matched
+# against the scan-root-relative, POSIX-normalized file path of each finding.
+version: 1
+target: coinbase/coinbase-advanced-py
+
+in_scope:
+  - "coinbase/**"          # the shipped library code
+
+out_of_scope:
+  - "tests/**"             # test fixtures (e.g. the PEM in tests/constants.py)
+  - "docs/**"
+  - "examples/**"
+  - "setup.py"             # build script (the benign exec(version) idiom)
+  - "conftest.py"
+  - "**/__pycache__/**"
+
+# "suppress" drops out-of-scope findings; "flag" keeps them marked in_scope=false
+on_out_of_scope: suppress

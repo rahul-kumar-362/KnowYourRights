@@ -1,0 +1,25 @@
+# ♟️ Endgames
+
+Endgame technique turns half-points into points. These files build from the absolute foundation (king & pawn, the opposition, **triangulation**, zugzwang) up through the essential rook endings (Lucena & Philidor) and minor-piece endings.
+
+> The opposition and key squares are the bedrock — master them before anything else. Then learn Lucena and Philidor; they alone decide a huge fraction of practical rook endgames.
+
+| File | Topic |
+|---|---|
+| [king-and-pawn-endgames.md](king-and-pawn-endgames.md) | The foundation: K+P vs K |
+| [the-opposition.md](the-opposition.md) | Direct, distant & diagonal opposition |
+| [triangulation.md](triangulation.md) | Losing a tempo to win a zugzwang *(generating)* |
+| [zugzwang.md](zugzwang.md) | When having to move is a liability |
+| [key-squares-and-rule-of-the-square.md](key-squares-and-rule-of-the-square.md) | Key squares & catching a passer |
+| [rook-endgames.md](rook-endgames.md) | Lucena, Philidor, the 7th rank |
+| [rook-vs-pawn.md](rook-vs-pawn.md) | Rook stops (or doesn't stop) the pawn |
+| [queen-vs-pawn.md](queen-vs-pawn.md) | Q vs pawn on the 7th *(generating)* |
+| [minor-piece-endgames.md](minor-piece-endgames.md) | Bishop vs knight |
+| [opposite-colored-bishops.md](opposite-colored-bishops.md) | The great drawing endgame |
+| [the-fortress.md](the-fortress.md) | Unbreakable drawn setups *(generating)* |
+| [converting-advantages.md](converting-advantages.md) | Technique when ahead |
+| [pawn-breakthrough.md](pawn-breakthrough.md) | Sacrificing to make a passer |
+
+**Suggested order:** king-and-pawn → the-opposition → key-squares → triangulation → zugzwang → rook-endgames → rook-vs-pawn → queen-vs-pawn → minor-piece-endgames → opposite-colored-bishops → the-fortress → pawn-breakthrough → converting-advantages.
+
+↩ Back to [main index](../README.md) · [roadmap](../ROADMAP.md) · [endgame decision tree](../flowcharts/endgame-decision-tree.md)

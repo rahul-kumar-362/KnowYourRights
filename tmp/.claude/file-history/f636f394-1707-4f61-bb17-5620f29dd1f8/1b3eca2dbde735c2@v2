@@ -1,0 +1,64 @@
+"""PY-EXEC-001 — Dangerous dynamic execution / shell injection sink.
+
+Flags ``eval()``/``exec()`` on a non-literal expression (a literal argument is
+benign) and any call passing ``shell=True``. Reported at PROBABLE confidence
+because confirming exploitability needs taint analysis the engine does not do;
+it surfaces the sink for human triage rather than auto-including it in a report.
+"""
+
+from __future__ import annotations
+
+import ast
+from collections.abc import Iterator
+
+from scanner.context import FileContext
+from scanner.models import Confidence, Finding
+from scanner.rules import register
+from scanner.rules.base import Rule
+
+
+@register
+class DangerousCallRule(Rule):
+    id = "PY-EXEC-001"
+    name = "Dangerous dynamic execution or shell injection sink"
+    # AC:H reflects that exploitability is conditional on the attacker
+    # controlling the input — honest for a sink we cannot prove is tainted.
+    cvss_vector = "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    confidence = Confidence.PROBABLE
+    cwe = "CWE-95"
+    remediation = (
+        "Avoid eval()/exec() on dynamic input. Pass an argument list to "
+        "subprocess and keep shell=False."
+    )
+    references = ("https://cwe.mitre.org/data/definitions/95.html",)
+
+    def analyze(self, ctx: FileContext) -> Iterator[Finding]:
+        for node in ast.walk(ctx.tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if (
+                isinstance(node.func, ast.Name)
+                and node.func.id in {"eval", "exec"}
+                and node.args
+                and not isinstance(node.args[0], ast.Constant)
+            ):
+                yield self.finding(
+                    ctx,
+                    node,
+                    message=(
+                        f"`{node.func.id}()` called on a non-literal expression; "
+                        f"if the input is attacker-controlled this is code injection."
+                    ),
+                    cwe="CWE-95",
+                )
+            for kw in node.keywords:
+                if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
+                    yield self.finding(
+                        ctx,
+                        node,
+                        message=(
+                            "Subprocess invoked with shell=True; if any argument is "
+                            "dynamic this enables command injection."
+                        ),
+                        cwe="CWE-78",
+                    )

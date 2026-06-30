@@ -1,0 +1,75 @@
+Skip to main content  >
+Hackerone logo
+
+
+
+rahul_kumar_362
+
+Hai
+All reports
+You are submitting a report to Coinbase
+
+Run checks
+
+Submit
+
+Caution: Signal Requirement
+Caution!
+Coinbase enforces a Signal Requirement.
+
+This requirement is temporarily waived for new users.
+
+Please learn about how Signal is calculated and focus on submitting accurate reports. A Signal of less than 1.0 can result in your inability to submit additional reports.
+
+Trial Reports Remaining: 4
+
+Hello rahul_kumar_362,
+I'm here to help you write your security vulnerability report. Start by filling out the form or tell me what vulnerability you've found and I can do that for you. You can ask me for help at any time.
+
+Hai can make mistakes. Make sure to verify its outputs.
+
+Give feedback
+You're about to submit a report to Coinbase. Provide as much information as possible about the potential issue you have discovered. The more information you provide, the quicker Coinbase will be able to validate the issue. If you haven't yet, please remember to review our Policy and Disclosure Guidelines.
+Report Intent #188896
+
+Last saved at 05:36 PM
+Asset
+Select...
+Weakness
+Select...
+Severity
+Not set
+
+Description
+> NOTE! Thanks for submitting a report! Please replace *all* the [square] sections below with the pertinent details. Remember, the more detail you provide, the easier it is for us to verify and then potentially issue a bounty, so be sure to take your time filling out the report!
+
+**Description:**
+[add more details about this vulnerability]
+
+**Impact:**
+[Please describe explicitly what impact to user privacy, digital or fiat currencies, or availability to systems that this bug affects. Examples of this could be leakage of user addresses, improperly credited funds, or an amplification denial of service against a core service.]
+
+## Steps To Reproduce:
+(Add details for how we can reproduce the issue)
+
+  1. [add step]
+  1. [add step]
+  1. [add step]
+
+## Browsers or Application Versions: ##
+[Which Web Browser did you use to interact with the web app or which version of the mobile app did you interact with?]
+
+## Supporting Material/References:
+
+  * List any additional material (e.g. screenshots, logs, etc.)
+  * Please include the request and response that demonstrates impact if necessary.
+  * If your actions directly affect your user account, please include the email address associated with that account.
+
+Impact
+Describe impact here.
+Attachments
+Drag and drop    |
+
+select files
+Max 250MB per file
+Record a demo

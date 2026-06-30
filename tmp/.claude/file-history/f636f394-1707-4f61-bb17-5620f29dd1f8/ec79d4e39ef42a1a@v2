@@ -1,0 +1,59 @@
+from scanner.dedup import KnownFindingStore
+from scanner.models import Confidence, Finding, Severity
+
+
+def _f(line=150, file="coinbase/websocket/websocket_base.py", snippet="ssl.SSLContext()"):
+    return Finding(
+        rule_id="PY-SSL-001",
+        message="m",
+        file=file,
+        line=line,
+        col=0,
+        cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+        cvss_score=7.5,
+        severity=Severity.HIGH,
+        snippet=snippet,
+        confidence=Confidence.CONFIRMED,
+        cwe="CWE-295",
+    )
+
+
+def test_register_new_then_known():
+    store = KnownFindingStore()
+    f = _f()
+    assert store.register_new(f) is True
+    assert store.is_known(f.fingerprint) is True
+    assert store.register_new(f) is False  # already recorded
+
+
+def test_is_stale_when_reported():
+    store = KnownFindingStore()
+    f = _f()
+    store.register_new(f)
+    store.records[f.fingerprint]["status"] = "reported"
+    assert store.is_stale(f.fingerprint) is True
+
+
+def test_filter_new_drops_findings_with_cve():
+    store = KnownFindingStore()
+    f = _f()
+    store.register_new(f)
+    store.records[f.fingerprint]["cve"] = "CVE-2024-0001"
+    assert store.filter_new([f]) == []
+
+
+def test_open_findings_are_not_stale():
+    store = KnownFindingStore()
+    f = _f()
+    store.register_new(f)
+    assert store.is_stale(f.fingerprint) is False
+    assert store.filter_new([f]) == [f]
+
+
+def test_save_load_round_trip(tmp_path):
+    p = tmp_path / "known.json"
+    store = KnownFindingStore(path=p)
+    store.register_new(_f())
+    store.save()
+    reloaded = KnownFindingStore.load(p)
+    assert reloaded.is_known(_f().fingerprint)

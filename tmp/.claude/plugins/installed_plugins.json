@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "plugins": {
+    "contribute@contribute-marketplace": [
+      {
+        "scope": "user",
+        "installPath": "C:\\Users\\HP\\.claude\\plugins\\cache\\contribute-marketplace\\contribute\\1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2026-03-06T15:00:47.007Z",
+        "lastUpdated": "2026-03-06T15:00:47.007Z",
+        "gitCommitSha": "d71f60f5708d982d45b252bd0b1088849b0a9635"
+      }
+    ]
+  }
+}

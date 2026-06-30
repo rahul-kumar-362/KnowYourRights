@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""
+render_board.py — a tiny, dependency-free FEN -> SVG chessboard renderer.
+
+Why this exists:
+    The whole curriculum stores positions as FEN strings plus ASCII boards so it
+    is 100% portable and never breaks. This tool turns ANY FEN into a real, sharp
+    SVG image (which renders as a picture in browsers, VS Code, Obsidian, GitHub,
+    etc.) so you can illustrate any position you like.
+
+Usage:
+    python tools/render_board.py "<FEN>" <output.svg> [--caption "text"] [--flip] [--size 64]
+
+    # Only the board (placement) field of the FEN is used, so a full FEN or just
+    # the placement field both work:
+    python tools/render_board.py "r3k3/2N5/8/8/8/8/8/4K3" assets/knight-fork.svg --caption "Nc7+ forks king and rook"
+
+    # Generate the whole showcase gallery used by the guide:
+    python tools/render_board.py --gallery assets
+
+No third-party packages required (pure standard library). Python 3.8+.
+"""
+
+import argparse
+import os
+import sys
+
+# Solid Unicode chess glyphs are used for BOTH colours; colour is conveyed by the
+# SVG fill/stroke instead of by the glyph, which gives clear contrast on light and
+# dark squares alike.
+GLYPH = {
+    "k": "♚", "q": "♛", "r": "♜",
+    "b": "♝", "n": "♞", "p": "♟",
+}
+
+LIGHT = "#f0d9b5"   # classic lichess "brown" light square
+DARK = "#b58863"    # classic lichess "brown" dark square
+WHITE_FILL = "#ffffff"
+WHITE_STROKE = "#3a3a3a"
+BLACK_FILL = "#2b2b2b"
+BLACK_STROKE = "#101010"
+LABEL = "#5b4636"
+
+FILES = "abcdefgh"
+
+
+def parse_placement(fen: str):
+    """Return an 8x8 grid (rank 8 first) of piece chars or None."""
+    placement = fen.strip().split()[0]
+    rows = placement.split("/")
+    if len(rows) != 8:
+        raise ValueError(f"FEN placement must have 8 ranks, got {len(rows)}: {placement!r}")
+    grid = []
+    for r in rows:
+        row = []
+        for ch in r:
+            if ch.isdigit():
+                row.extend([None] * int(ch))
+            else:
+                row.append(ch)
+        if len(row) != 8:
+            raise ValueError(f"Rank {r!r} does not describe 8 squares")
+        grid.append(row)
+    return grid
+
+
+def render(fen: str, caption: str = "", flip: bool = False, sq: int = 64) -> str:
+    grid = parse_placement(fen)
+    if flip:
+        grid = [list(reversed(r)) for r in reversed(grid)]
+
+    margin = int(sq * 0.45)          # room for coordinates
+    cap_h = int(sq * 0.55) if caption else 0
+    board = sq * 8
+    w = board + margin * 2
+    h = board + margin * 2 + cap_h
+    glyph_size = int(sq * 0.78)
+    label_size = int(sq * 0.26)
+
+    out = []
+    out.append(
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" '
+        f'viewBox="0 0 {w} {h}" role="img" aria-label="chess position {fen}">'
+    )
+    out.append(f'<rect width="{w}" height="{h}" fill="#faf3e0"/>')
+
+    font = ("font-family=\"'Segoe UI Symbol','Noto Sans Symbols2','DejaVu Sans',"
+            "'Arial Unicode MS',sans-serif\"")
+
+    for rank in range(8):       # 0 = top row (rank 8 or 1 if flipped)
+        for file in range(8):
+            x = margin + file * sq
+            y = margin + rank * sq
+            is_light = (rank + file) % 2 == 0
+            color = LIGHT if is_light else DARK
+            out.append(f'<rect x="{x}" y="{y}" width="{sq}" height="{sq}" fill="{color}"/>')
+            piece = grid[rank][file]
+            if piece:
+                glyph = GLYPH[piece.lower()]
+                cx = x + sq / 2
+                cy = y + sq / 2 + glyph_size * 0.34
+                if piece.isupper():     # White
+                    fill, stroke = WHITE_FILL, WHITE_STROKE
+                else:                   # black
+                    fill, stroke = BLACK_FILL, BLACK_STROKE
+                out.append(
+                    f'<text x="{cx:.1f}" y="{cy:.1f}" font-size="{glyph_size}" '
+                    f'text-anchor="middle" {font} fill="{fill}" stroke="{stroke}" '
+                    f'stroke-width="{max(1, sq//40)}" paint-order="stroke">{glyph}</text>'
+                )
+
+    # Coordinates
+    rank_labels = list(range(8, 0, -1)) if not flip else list(range(1, 9))
+    file_labels = list(FILES) if not flip else list(reversed(FILES))
+    for i, rl in enumerate(rank_labels):
+        y = margin + i * sq + sq / 2 + label_size * 0.35
+        out.append(
+            f'<text x="{margin*0.55:.1f}" y="{y:.1f}" font-size="{label_size}" '
+            f'text-anchor="middle" {font} fill="{LABEL}">{rl}</text>'
+        )
+    for i, fl in enumerate(file_labels):
+        x = margin + i * sq + sq / 2
+        y = margin + board + margin * 0.62
+        out.append(
+            f'<text x="{x:.1f}" y="{y:.1f}" font-size="{label_size}" '
+            f'text-anchor="middle" {font} fill="{LABEL}">{fl}</text>'
+        )
+
+    if caption:
+        safe = (caption.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+        out.append(
+            f'<text x="{w/2:.1f}" y="{margin + board + margin + cap_h*0.55:.1f}" '
+            f'font-size="{int(sq*0.26)}" text-anchor="middle" '
+            f'font-family="Segoe UI,Helvetica,Arial,sans-serif" fill="#3a2e22">{safe}</text>'
+        )
+
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+# Verified, minimal showcase positions used across the guide.
+GALLERY = [
+    ("start.svg", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "Starting position"),
+    ("knight-fork.svg", "r3k3/2N5/8/8/8/8/8/4K3", "Knight on c7 forks the black king and rook"),
+    ("pin.svg", "3k4/8/5n2/6B1/8/8/8/4K3", "Bg5 pins the f6-knight to the king on d8"),
+    ("skewer.svg", "q7/8/8/8/k7/8/8/R3K3", "Ra1+ skewers the king; then Rxa8 wins the queen"),
+    ("back-rank-mate.svg", "4R1k1/5ppp/8/8/8/8/8/6K1", "Back-rank mate: Re8 is checkmate"),
+    ("smothered-mate.svg", "6rk/5Npp/8/8/8/8/8/6K1", "Smothered mate: Nf7 is checkmate"),
+    ("opposition.svg", "8/3k4/8/3K4/8/8/8/8", "Direct opposition on the d-file"),
+    ("greek-gift.svg", "r1bq1rk1/pppn1ppp/3b4/3pp3/3P4/2NBPN2/PPP2PPP/R1BQ1RK1", "Greek Gift setup: White eyes Bxh7+"),
+]
+
+
+def write_gallery(outdir: str):
+    os.makedirs(outdir, exist_ok=True)
+    for fname, fen, cap in GALLERY:
+        svg = render(fen, caption=cap)
+        path = os.path.join(outdir, fname)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(svg)
+        print(f"wrote {path}")
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Render a FEN to an SVG chessboard.")
+    ap.add_argument("fen", nargs="?", help="FEN string (full or placement field only)")
+    ap.add_argument("output", nargs="?", help="output .svg path")
+    ap.add_argument("--caption", default="", help="caption text under the board")
+    ap.add_argument("--flip", action="store_true", help="view from Black's side")
+    ap.add_argument("--size", type=int, default=64, help="square size in px (default 64)")
+    ap.add_argument("--gallery", metavar="DIR", help="generate the showcase gallery into DIR")
+    args = ap.parse_args()
+
+    if args.gallery:
+        write_gallery(args.gallery)
+        return
+    if not args.fen or not args.output:
+        ap.error("provide FEN and output path, or use --gallery DIR")
+    svg = render(args.fen, caption=args.caption, flip=args.flip, sq=args.size)
+    with open(args.output, "w", encoding="utf-8") as f:
+        f.write(svg)
+    print(f"wrote {args.output}")
+
+
+if __name__ == "__main__":
+    main()

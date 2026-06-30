@@ -1,0 +1,42 @@
+import pytest
+
+from scanner.cvss import CvssError, base_score, compute, severity_from_score
+
+
+@pytest.mark.parametrize(
+    "vector,score",
+    [
+        ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N", 7.5),  # the SSL finding
+        ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H", 9.8),
+        ("CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N", 5.5),
+        ("CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N", 6.1),  # std reflected-XSS, Scope:Changed
+        ("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N", 0.0),
+    ],
+)
+def test_base_score_matches_published(vector, score):
+    assert base_score(vector) == score
+
+
+def test_ssl_vector_is_high():
+    assert compute("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N") == (7.5, "HIGH")
+
+
+def test_severity_buckets():
+    assert severity_from_score(0.0) == "NONE"
+    assert severity_from_score(3.9) == "LOW"
+    assert severity_from_score(4.0) == "MEDIUM"
+    assert severity_from_score(7.0) == "HIGH"
+    assert severity_from_score(9.0) == "CRITICAL"
+
+
+def test_vector_without_prefix_is_accepted():
+    assert base_score("AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N") == 7.5
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ["", "garbage", "CVSS:3.1/AV:N", "AV:Z/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"],
+)
+def test_invalid_vectors_raise(bad):
+    with pytest.raises(CvssError):
+        base_score(bad)

@@ -1,0 +1,615 @@
+================================================================================
+APPLIED.txt — How This Project Works, End to End
+StrokeHand Recovery Predictor
+================================================================================
+
+Written for someone who wants to understand the project deeply —
+including the medical terms, the technology, and how the prediction is made.
+
+================================================================================
+SECTION 1: THE PROBLEM WE ARE SOLVING
+================================================================================
+
+When a person has a stroke, a part of their brain loses blood supply and dies.
+This causes sudden disability — weakness in the face, arm, or leg, difficulty
+speaking, or loss of vision.
+
+One of the most common and devastating effects is loss of hand function.
+About 70% of stroke survivors cannot use their hand properly after a stroke.
+This is the #1 reason stroke patients cannot return to independent daily life —
+they cannot feed themselves, dress themselves, or write.
+
+The key question that doctors and physiotherapists want to answer within the
+first 3 days of admission is:
+
+    "Will this patient regain useful hand function in 3 months — YES or NO?"
+
+Why does this matter?
+- If the answer is YES → start intensive rehabilitation immediately.
+- If the answer is NO  → focus on teaching compensatory strategies (use the
+  other hand), train the caregiver, manage expectations early.
+
+Currently, making this prediction requires expensive MRI scans or TMS
+(Transcranial Magnetic Stimulation) equipment. These are NOT available in
+90% of hospitals in India and other low/middle income countries.
+
+Our project builds a machine learning model that makes this same prediction
+using ONLY simple bedside tests and a basic CT scan — both available in
+almost every hospital in India.
+
+================================================================================
+SECTION 2: MEDICAL TERMS EXPLAINED
+================================================================================
+
+────────────────────────────────────────────────────────────
+NIHSS — National Institutes of Health Stroke Scale
+────────────────────────────────────────────────────────────
+What it is:
+  A standardized scoring system used by doctors to measure how severe a
+  stroke is. A trained doctor or nurse tests the patient at the bedside.
+
+How it is scored:
+  The test checks 11 different neurological functions:
+    - Level of consciousness (is the patient awake and responding?)
+    - Eye movement (can the patient follow a moving finger?)
+    - Vision (any visual field loss?)
+    - Facial palsy (is one side of the face drooping?)
+    - Motor arm strength (can the patient hold their arm up for 10 seconds?)
+    - Motor leg strength (can the patient hold their leg up for 5 seconds?)
+    - Limb ataxia (coordination — can they touch finger to nose?)
+    - Sensory (can they feel a pinprick on both sides equally?)
+    - Language/Aphasia (can they name objects and read sentences?)
+    - Dysarthria (is their speech slurred?)
+    - Neglect (do they ignore one side of their body?)
+
+Score meaning:
+    0       = No stroke symptoms (normal)
+    1-4     = Minor stroke
+    5-15    = Moderate stroke
+    16-20   = Moderate-severe stroke
+    21-42   = Severe stroke
+
+Why it matters for our model:
+  Higher NIHSS = more brain damage = lower chance of hand recovery.
+  It is the single strongest predictor in our model (confirmed by SHAP analysis).
+
+────────────────────────────────────────────────────────────
+SAFE Score — Shoulder Abduction Finger Extension Score
+────────────────────────────────────────────────────────────
+What it is:
+  A simple 2-minute bedside test specifically designed to predict arm recovery
+  after stroke. Developed by researchers in the UK.
+
+How it works:
+  The physiotherapist asks the patient to do two movements on the affected side:
+    1. Shoulder Abduction: Raise the arm out sideways (0-5 points)
+    2. Finger Extension: Straighten the fingers (0-5 points)
+  Total score: 0 (no movement at all) to 10 (full movement)
+
+Score interpretation:
+    SAFE >= 5  → likely to recover useful arm function
+    SAFE < 5   → less likely to recover
+
+Why it's better than just looking at the arm:
+  Small amounts of shoulder and finger movement in the first 72 hours
+  indicate that the nerve pathways are partially intact — which predicts
+  much better recovery than just measuring overall weakness.
+
+Why our ML model beats it:
+  SAFE alone achieves AUC ~0.75 (misclassifies 25% of patients).
+  Our model integrates SAFE with 18 other features, achieving AUC ~0.85-0.90.
+
+────────────────────────────────────────────────────────────
+ARAT — Action Research Arm Test
+────────────────────────────────────────────────────────────
+What it is:
+  The gold standard test to measure how well a stroke patient can use their
+  hand and arm for real-world tasks. Used as our OUTCOME (what we are predicting).
+
+How it works:
+  A physiotherapist asks the patient to complete 19 tasks across 4 categories:
+    1. Grasp   (picking up objects of different sizes)
+    2. Grip    (holding objects between thumb and finger)
+    3. Pinch   (fine finger movements)
+    4. Gross Movement (moving the whole arm)
+
+Score:
+    0  = Cannot perform the task at all
+    57 = Perfect arm and hand function
+
+Our threshold:
+    ARAT >= 32 = GOOD recovery (patient can use the hand functionally in daily life)
+    ARAT < 32  = POOR recovery (patient remains significantly disabled)
+
+This 32-point threshold is validated in research literature as the minimum
+score needed for meaningful hand use in daily activities.
+
+────────────────────────────────────────────────────────────
+ASPECTS — Alberta Stroke Program Early CT Score
+────────────────────────────────────────────────────────────
+What it is:
+  A standardized way to read a CT brain scan and score how much brain tissue
+  has been damaged in a stroke. Rated by a radiologist.
+
+How it works:
+  The brain (specifically the MCA territory — the area most commonly affected
+  by stroke) is divided into 10 regions. Each region that shows early stroke
+  damage loses 1 point.
+
+Score:
+    10 = Normal CT scan (no visible damage yet — but stroke still happened)
+    0  = Massive stroke involving the entire MCA territory
+
+Why it matters:
+  More CT damage = larger stroke = worse recovery.
+  Lower ASPECTS means more brain tissue is dead.
+
+────────────────────────────────────────────────────────────
+CST — Corticospinal Tract
+────────────────────────────────────────────────────────────
+What it is:
+  The main nerve highway that carries movement signals from the brain
+  down to the muscles of the arm and hand.
+
+Why it matters:
+  If the stroke damages the CST directly, the hand has almost no chance of
+  recovery because the "wire" carrying movement commands is broken.
+  If the CST is spared, recovery is more likely even with a large stroke.
+
+On CT scan:
+  The radiologist checks whether the stroke lesion overlaps with the path
+  of the CST (Yes/No). This single feature is one of the strongest
+  predictors of hand recovery outcome.
+
+────────────────────────────────────────────────────────────
+mRS — Modified Rankin Scale
+────────────────────────────────────────────────────────────
+What it is:
+  Measures overall disability/dependence after stroke.
+    0 = No symptoms at all
+    1 = No significant disability
+    2 = Slight disability
+    3 = Moderate disability
+    4 = Moderately severe disability
+    5 = Severe disability
+    6 = Dead
+
+In our project:
+  We only include patients with pre-stroke mRS <= 2 (were mostly independent
+  before the stroke), so baseline disability doesn't confuse the prediction.
+
+────────────────────────────────────────────────────────────
+Trunk Control Test (TCT)
+────────────────────────────────────────────────────────────
+What it is:
+  Tests how well the patient can control the muscles of their trunk/core
+  while sitting. Scored 0-100.
+
+Why it matters:
+  Good trunk control early after stroke predicts better overall recovery —
+  it indicates that the brain's general motor control areas are partially intact.
+
+────────────────────────────────────────────────────────────
+AUC-ROC — Area Under the Receiver Operating Characteristic Curve
+────────────────────────────────────────────────────────────
+What it is:
+  The primary metric we use to judge how good our ML model is.
+
+Simple explanation:
+  Imagine 100 patients. 70 will have good recovery, 30 will have poor recovery.
+  If we rank all 100 patients by their predicted probability (highest to lowest):
+    - A perfect model (AUC=1.0) would rank ALL 70 good-recovery patients at
+      the top, above ALL 30 poor-recovery patients.
+    - A useless model (AUC=0.5) would rank them randomly — no better than
+      flipping a coin.
+
+What our AUC values mean:
+    AUC = 1.000  → Perfect (only possible on training data — means overfitting)
+    AUC = 0.915  → Excellent (Random Forest on external validation)
+    AUC = 0.875  → Very good (XGBoost on external validation)
+    AUC = 0.75   → Acceptable (SAFE score alone — the current clinical tool)
+    AUC = 0.50   → Useless (coin flip)
+
+The research target is AUC >= 0.85. Our Random Forest achieves 0.915.
+
+────────────────────────────────────────────────────────────
+Sensitivity & Specificity
+────────────────────────────────────────────────────────────
+Sensitivity (Recall):
+  "Of all patients who DID have good recovery, what % did our model correctly
+   identify as good recovery?"
+  High sensitivity = we don't miss patients who could benefit from rehab.
+
+Specificity:
+  "Of all patients who did NOT have good recovery, what % did our model
+   correctly flag as poor recovery?"
+  High specificity = we don't waste resources on patients who won't recover.
+
+Our Random Forest on validation set:
+  Sensitivity = 0.920  (correctly identifies 92% of good recovery patients)
+  Specificity = 0.737  (correctly identifies 74% of poor recovery patients)
+
+────────────────────────────────────────────────────────────
+Brier Score
+────────────────────────────────────────────────────────────
+What it is:
+  Measures how well-calibrated the model's probabilities are.
+  (Is "80% probability" actually right 80% of the time?)
+
+Range:
+    0.0 = Perfect calibration
+    0.25 = No better than always predicting 50%
+    Lower is better.
+
+Our models:
+  Random Forest Brier Score = 0.081 to 0.111 → well calibrated.
+
+────────────────────────────────────────────────────────────
+SHAP — SHapley Additive exPlanations
+────────────────────────────────────────────────────────────
+What it is:
+  A mathematical technique from game theory (Shapley values) adapted for
+  machine learning. It explains WHY the model gave a specific prediction
+  for a specific patient.
+
+How it works:
+  For each patient, SHAP calculates the contribution of each feature to
+  pushing the prediction above or below the average prediction.
+
+  Example for one patient:
+    Base prediction (average):         65% good recovery
+    + NIHSS=4 (low severity)    → +15% → pushes toward good
+    + SAFE=8 (high)             → +10% → pushes toward good
+    + CST not involved          → +5%  → pushes toward good
+    + Age=78 (old)              → -8%  → pushes toward poor
+    + Lesion volume=45cc (large)→ -7%  → pushes toward poor
+    Final prediction:                   80% good recovery
+
+Why it's important for this project:
+  Doctors will not trust a "black box" ML model. SHAP lets us show the
+  clinician exactly which features drove the prediction, building trust
+  and enabling clinical interpretation.
+
+Our top 5 predictors identified by SHAP:
+  1. nihss_total          (stroke severity — most important)
+  2. safe_score           (shoulder/finger movement test)
+  3. lesion_volume_cc     (size of brain damage on CT)
+  4. time_to_assess_hr    (when the assessment was done)
+  5. finger_extension     (can the patient extend fingers?)
+
+================================================================================
+SECTION 3: HOW THE PREDICTION IS CALCULATED (STEP BY STEP)
+================================================================================
+
+STEP 1 — Data Collection (at hospital bedside, within 72 hours of stroke)
+──────────────────────────────────────────────────────────────────────────
+A physiotherapist and radiologist collect 19 data points:
+
+  FROM THE BEDSIDE:
+  - Patient's age, sex, which hand is dominant
+  - Does the patient have diabetes, hypertension, atrial fibrillation?
+  - How many hours since stroke onset to assessment?
+  - NIHSS total score + 4 sub-scores (motor arm, consciousness, sensory, neglect)
+  - SAFE score (0-10)
+  - Can the patient extend fingers? (Yes/No)
+  - Trunk Control Test score (0-100)
+
+  FROM THE CT SCAN:
+  - ASPECTS score (0-10)
+  - Is the Corticospinal Tract involved? (Yes/No)
+  - Lesion volume in millilitres
+  - Which side of brain is the stroke on? (Left/Right)
+
+STEP 2 — Input into the Model
+─────────────────────────────
+All 19 values are passed into our trained Random Forest model.
+
+A Random Forest is made of 300 decision trees. Each tree is a series of
+Yes/No questions about the patient's data, for example:
+
+  Tree #1 might ask:
+    Q: Is NIHSS total > 10?
+       YES → Q: Is SAFE score < 4?
+                YES → Prediction: POOR recovery (probability: 0.15)
+                NO  → Prediction: GOOD recovery (probability: 0.72)
+       NO  → Q: Is finger extension present?
+                YES → Prediction: GOOD recovery (probability: 0.91)
+                NO  → Q: Is CST involved?
+                          YES → Prediction: POOR recovery (0.38)
+                          NO  → Prediction: GOOD recovery (0.68)
+
+  ...and this repeats across all 300 trees.
+
+STEP 3 — Aggregation
+─────────────────────
+Each of the 300 trees votes: "GOOD" or "POOR."
+The final probability = number of trees voting GOOD ÷ 300.
+
+  Example: 246 trees say GOOD, 54 say POOR.
+  Probability = 246 / 300 = 0.82 = 82% chance of good recovery.
+
+STEP 4 — Output and Risk Category
+───────────────────────────────────
+The probability is displayed on the web app with a risk category:
+
+  >= 75%  → GREEN  — High likelihood of good recovery
+  45-74%  → ORANGE — Intermediate / uncertain
+  < 45%   → RED    — Low likelihood of good recovery
+
+Clinical advice is shown based on the category:
+  GREEN:  "Patient likely to achieve functional hand use.
+           Consider standard rehabilitation pathway."
+  ORANGE: "Uncertain prognosis. Consider intensive early rehabilitation
+           and close monitoring."
+  RED:    "Poor prognosis for hand function. Prioritise compensatory
+           strategies and caregiver training."
+
+================================================================================
+SECTION 4: TECH STACK — EVERY TECHNOLOGY USED AND WHY
+================================================================================
+
+LANGUAGE: Python 3.11
+  Why: Industry standard for data science and ML. Huge library ecosystem.
+  Used for: All data generation, model training, evaluation, web app.
+
+─────────────────────────────────────────────────────
+DATA HANDLING
+─────────────────────────────────────────────────────
+pandas
+  What: Python's spreadsheet — loads, filters, transforms tabular data.
+  Used for: Loading CSVs, creating feature matrices, results tables.
+
+numpy
+  What: Fast numerical computation library.
+  Used for: Array operations, random number generation for synthetic data,
+            computing metrics like sensitivity/specificity.
+
+─────────────────────────────────────────────────────
+MACHINE LEARNING MODELS
+─────────────────────────────────────────────────────
+scikit-learn (sklearn)
+  What: The most widely used Python ML library. Contains hundreds of algorithms.
+  Used for:
+    - LogisticRegression: Our baseline model. Fits a weighted combination of
+      features to predict probability. Interpretable but limited to linear
+      relationships between features and outcome.
+    - RandomForestClassifier: Our best model. Ensemble of 300 decision trees.
+      Handles non-linear relationships, missing values, and mixed feature types
+      naturally. Robust and generalizes well to new patients.
+    - StandardScaler: Normalizes features (e.g., age 18-90 → 0-1 range) for
+      Logistic Regression (tree models don't need this).
+    - StratifiedKFold: Cross-validation that maintains class balance across folds.
+    - roc_auc_score, brier_score_loss, calibration_curve: Evaluation metrics.
+
+xgboost (XGBClassifier)
+  What: Extreme Gradient Boosting. Builds trees sequentially — each new tree
+        corrects the errors of the previous tree. Consistently wins ML competitions
+        on structured/tabular data.
+  Why used: Strong benchmark model. Often the best performer on medical datasets.
+  Key parameters used:
+    - n_estimators=300: Build 300 sequential trees.
+    - learning_rate=0.05: Each tree contributes only a small correction.
+    - max_depth=5: Trees can be at most 5 levels deep (controls overfitting).
+    - scale_pos_weight: Adjusts for class imbalance (more good recovery patients
+      than poor recovery in our data).
+
+pytorch-tabnet (TabNetClassifier)
+  What: A deep learning model specifically designed for tabular (structured) data.
+        Uses an attention mechanism to select which features to focus on at each
+        step. Developed by Google researchers in 2019.
+  Why used: The research proposal specifically required comparing TabNet vs
+            traditional tree models. TabNet often beats trees on larger datasets.
+  How it works:
+    - Sequential attention: At each "step," the model decides which features
+      are most relevant and focuses on them.
+    - Built on PyTorch (Facebook's deep learning framework).
+  Parameters used:
+    - n_d=16, n_a=16: Width of decision and attention embedding layers.
+    - n_steps=3: 3 sequential attention steps.
+    - patience=20: Stops training if validation AUC doesn't improve for 20 epochs.
+
+─────────────────────────────────────────────────────
+EXPLAINABILITY
+─────────────────────────────────────────────────────
+shap
+  What: Library implementing SHAP (SHapley Additive exPlanations).
+  Used for:
+    - TreeExplainer: Efficiently computes SHAP values for tree-based models
+      (Random Forest, XGBoost) in seconds.
+    - summary_plot (beeswarm): Shows how each feature affects predictions
+      across ALL patients — which features matter most and in which direction.
+    - Bar chart: Ranks features by mean absolute SHAP value.
+    - Waterfall plot: Shows feature contributions for INDIVIDUAL patients.
+
+─────────────────────────────────────────────────────
+VISUALIZATION
+─────────────────────────────────────────────────────
+matplotlib
+  What: Python's foundational plotting library.
+  Used for: ROC curves, calibration plots, bar charts, SHAP gauge chart in app.
+
+seaborn
+  What: Statistical visualization library built on matplotlib.
+  Used for: Correlation heatmap (shows which features are related to each other).
+
+─────────────────────────────────────────────────────
+WEB APPLICATION
+─────────────────────────────────────────────────────
+streamlit
+  What: Python library that converts a Python script into a full interactive
+        web application — no HTML, CSS, or JavaScript needed.
+  Why chosen over Flask/Django:
+    - Zero frontend code required.
+    - Runs entirely in Python.
+    - Ideal for rapid ML tool deployment in clinical/research settings.
+    - Can be deployed for free on Streamlit Cloud or Hugging Face Spaces.
+  Used for: The bedside web calculator — all input widgets (sliders, dropdowns),
+            the gauge chart, the results display, the SHAP table.
+
+─────────────────────────────────────────────────────
+MODEL PERSISTENCE
+─────────────────────────────────────────────────────
+pickle
+  What: Python's built-in serialization library.
+  Used for: Saving trained scikit-learn models (Logistic Regression,
+            Random Forest) to .pkl files so they can be loaded by the web app
+            without retraining every time.
+
+json
+  What: Python's built-in JSON library.
+  Used for: Saving metrics summaries and the top 5 SHAP predictors as readable
+            .json files.
+
+─────────────────────────────────────────────────────
+DATA FORMAT
+─────────────────────────────────────────────────────
+CSV (Comma-Separated Values)
+  What: Simple spreadsheet format. Each row = one patient, each column = one feature.
+  Used for: All raw and processed datasets.
+  In production: REDCap (the hospital's research database) exports directly to CSV.
+
+─────────────────────────────────────────────────────
+GUIDELINES FOLLOWED
+─────────────────────────────────────────────────────
+TRIPOD-AI (Transparent Reporting of a multivariable prediction model for
+           Individual Prognosis Or Diagnosis — Artificial Intelligence extension)
+  What: International reporting standard for ML prediction models in medicine.
+  Ensures: The model development, validation, and reporting follows best
+           practices accepted by medical journals and ethics committees.
+
+================================================================================
+SECTION 5: HOW THE MODEL IS ACCURATE (AND ITS HONEST LIMITATIONS)
+================================================================================
+
+WHAT MAKES IT METHODOLOGICALLY ACCURATE
+────────────────────────────────────────
+1. Stratified K-Fold Cross-Validation (k=5)
+   The development data (350 patients) is split into 5 equal parts.
+   The model trains on 4 parts and is tested on the 5th part — rotated
+   5 times. This gives a honest estimate of real-world performance because
+   the model is always tested on data it has never seen during training.
+
+2. External Validation on a Completely Separate Cohort
+   150 patients that were NEVER used in training or cross-validation are
+   used to test the final model. This is the most honest test of accuracy.
+   Our Random Forest achieves AUC=0.915 on this external validation set.
+
+3. Calibration Testing
+   We don't just check whether predictions are in the right direction —
+   we check whether the probabilities are accurate.
+   A Brier score of 0.081 means when our model says "80% probability,"
+   it is actually right close to 80% of the time.
+
+4. Comparison Against Clinical Baselines
+   The model is always compared against:
+   - What a doctor would predict alone
+   - What the SAFE score alone would predict
+   This ensures the ML model actually adds value over existing tools.
+
+5. SHAP Validation
+   The top predictors identified by SHAP (NIHSS, SAFE score, lesion volume,
+   finger extension) match what medical literature says are the most
+   important predictors of hand recovery. This is called face validity —
+   the model has learned clinically sensible relationships.
+
+HONEST LIMITATIONS
+──────────────────
+1. Currently trained on SYNTHETIC data.
+   The model has been trained on artificially generated patient data.
+   The AUC values (0.915) reflect performance on synthetic data, NOT
+   real patients. The numbers will change when real patient data is used.
+   Expected real-world AUC: 0.80 to 0.90 (based on published literature).
+
+2. Population specificity.
+   The model is designed for the Indian population with acute ischemic stroke.
+   It may not generalize to hemorrhagic stroke, pediatric stroke, or
+   populations with different comorbidity profiles.
+
+3. Not a replacement for clinical judgment.
+   The model is a Decision Support Tool — it gives a probability estimate
+   to inform, not replace, the clinician's decision. A patient predicted
+   at 40% probability may still benefit from intensive rehabilitation.
+
+4. Input quality matters.
+   The model is only as good as the data entered. An incorrect NIHSS score
+   or inaccurate ASPECTS rating from the CT scan will reduce accuracy.
+   Standardized training for data collectors is essential.
+
+5. Class imbalance.
+   In our synthetic data, ~73% of patients have good recovery. In real-world
+   stroke units, this distribution may differ, affecting sensitivity/specificity.
+
+================================================================================
+SECTION 6: PROJECT FILE STRUCTURE
+================================================================================
+
+C:\1stMLProject\
+│
+├── PROJECT_OVERVIEW.txt          ← What the industry needs (executive summary)
+├── APPLIED.txt                   ← This file (deep technical explanation)
+│
+├── data\
+│   ├── generate_synthetic_data.py    ← Creates fake-but-realistic patient data
+│   ├── raw\
+│   │   ├── stroke_dataset.csv        ← All 500 patients combined
+│   │   ├── development_cohort.csv    ← 350 patients for training
+│   │   └── validation_cohort.csv    ← 150 patients for final testing
+│   └── processed\
+│       ├── X_dev.csv                ← Feature matrix (training)
+│       ├── y_dev.csv                ← Outcomes (training)
+│       ├── X_val.csv                ← Feature matrix (validation)
+│       └── y_val.csv                ← Outcomes (validation)
+│
+├── phase1_eda_preprocessing.py   ← Data exploration + cleaning
+├── phase2_3_models.py            ← Train all 5 models
+├── phase4_5_evaluation_shap.py  ← Evaluate models + SHAP analysis
+│
+├── models\
+│   ├── logistic_regression.pkl  ← Saved Logistic Regression model
+│   ├── random_forest.pkl        ← Saved Random Forest model (BEST)
+│   ├── xgboost.pkl              ← Saved XGBoost model
+│   └── tabnet_model.zip         ← Saved TabNet model
+│
+├── results\
+│   ├── figures\
+│   │   ├── eda_01_outcome_distribution.png
+│   │   ├── eda_02_feature_distributions.png
+│   │   ├── eda_03_correlation_heatmap.png
+│   │   ├── eda_04_binary_features.png
+│   │   ├── eval_01_roc_curves.png          ← ROC curves all models
+│   │   ├── eval_02_calibration.png         ← Calibration plots
+│   │   ├── eval_03_metrics_bar.png         ← Metrics comparison
+│   │   ├── shap_01_summary_beeswarm.png   ← SHAP beeswarm
+│   │   ├── shap_02_importance_bar.png     ← SHAP feature importance
+│   │   └── shap_03_waterfall_examples.png ← SHAP per-patient
+│   └── metrics\
+│       ├── cv_auc_summary.json            ← Cross-validation AUC per model
+│       ├── full_metrics.csv               ← Complete evaluation table
+│       └── top5_predictors.json          ← Top 5 SHAP predictors
+│
+└── webapp\
+    └── app.py                    ← Streamlit web calculator
+
+================================================================================
+SECTION 7: HOW TO RUN THE PROJECT (IN ORDER)
+================================================================================
+
+Step 1 — Generate data (or replace with real CSV):
+    python data/generate_synthetic_data.py
+
+Step 2 — Explore data and prepare features:
+    python phase1_eda_preprocessing.py
+
+Step 3 — Train all models:
+    python phase2_3_models.py
+
+Step 4 — Evaluate and run SHAP:
+    python phase4_5_evaluation_shap.py
+
+Step 5 — Launch the bedside web calculator:
+    python -m streamlit run webapp/app.py
+    Then open: http://localhost:8501
+
+================================================================================
+END OF APPLIED.txt
+================================================================================

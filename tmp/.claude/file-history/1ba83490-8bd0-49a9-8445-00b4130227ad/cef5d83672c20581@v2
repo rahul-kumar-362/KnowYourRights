@@ -1,0 +1,7 @@
+from enum import Enum
+
+
+class DerivedSearchResultType(Enum):
+    PUBLIC_KEY = "public key"
+    PRIVATE_KEY = "private key"
+    ACCESS_TOKEN = "access token"

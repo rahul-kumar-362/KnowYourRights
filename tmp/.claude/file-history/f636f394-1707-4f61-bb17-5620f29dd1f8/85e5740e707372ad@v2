@@ -1,0 +1,67 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+This is a Coinbase bug bounty hunting toolkit — a collection of Python scripts that scan Coinbase open-source repositories for security vulnerabilities and generate HackerOne-ready reports.
+
+## Running the Tools
+
+All scripts live in `Tools/` and require Python 3. No install step — dependencies (`requests`, `beautifulsoup4`, `selenium`) must be present.
+
+```bash
+# Quick scan of top Coinbase repos
+python Tools/quick_scan.py
+
+# Deep scan of a specific repository
+python Tools/bug_hunter.py Repos/coinbase-advanced-py
+
+# Full multi-repo analysis
+python Tools/coinbase_repo_scanner.py
+
+# Reproduce a found vulnerability
+python Tools/proof_of_concept.py
+```
+
+## Repository Layout
+
+| Path | Purpose |
+|------|---------|
+| `Tools/` | Scanning scripts and PoC generators |
+| `Repos/` | Cloned Coinbase repos under analysis |
+| `Reports/` | Generated JSON scan results and Markdown submission drafts |
+| `Documentation/` | Hunting guides, report templates, and mission docs |
+
+## Architecture
+
+### Scanner pipeline
+
+`quick_scan.py` / `coinbase_repo_scanner.py` enumerate files in `Repos/`, pass them through pattern-matching routines (regex for hardcoded secrets, SSL flags, input sinks), then write structured JSON to `Reports/` and a companion `.md` submission file.
+
+`bug_hunter.py` is the lower-level engine used by the others — it walks a single repo directory and returns findings as a list of dicts.
+
+`proof_of_concept.py` reads a finding from `Reports/` and builds a runnable PoC demonstrating exploitability (e.g., a MITM intercept script for the SSL bug).
+
+### SSL test assets
+
+`cert.pem`, `key.pem`, and `generate_cert.py` at the root are used by the SSL-related PoC scripts to stand up a rogue server for MITM demonstration.
+
+## Known Findings
+
+One HIGH-severity vulnerability already documented:
+
+- **File**: `Repos/coinbase-advanced-py/coinbase/websocket/websocket_base.py`, line 150  
+- **Issue**: Insecure SSL — `ssl_verify=False` / disabled hostname checking allows MITM on WebSocket connections  
+- **CVSS**: 7.5 (HIGH)  
+- **Report**: `Documentation/INSECURE_SSL_BUG_REPORT.md` and `Reports/coinbase-advanced-py_submission.md`
+
+## Target Repo Tests
+
+The cloned `Repos/coinbase-advanced-py/` has its own Makefile:
+
+```bash
+cd Repos/coinbase-advanced-py
+make test     # run unit tests
+make format   # isort + black
+```

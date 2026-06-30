@@ -1,0 +1,171 @@
+================================================================================
+PROJECT OVERVIEW — WHAT THIS PROJECT IS AND WHAT THE INDUSTRY NEEDS FROM US
+================================================================================
+
+PROJECT TITLE:
+Development and Validation of a Machine Learning-Based Prediction Model for
+Hand Function Recovery Using Routine Clinical and CT Data in Patients with
+Acute Ischemic Stroke
+
+--------------------------------------------------------------------------------
+WHAT IS THIS PROJECT?
+--------------------------------------------------------------------------------
+
+This is a medical ML research project focused on predicting whether a stroke
+patient will recover good hand function within 3 months of their stroke.
+
+The problem it solves:
+- 70% of stroke survivors suffer upper limb (arm/hand) impairment.
+- Hand dysfunction is the #1 cause of long-term disability after stroke.
+- In most Indian hospitals, existing prediction tools (like PREP2) require
+  expensive MRI or TMS equipment — unavailable in 90% of Indian hospitals.
+- The SAFE score (a simple bedside test) exists but misclassifies 25% of patients.
+
+The solution:
+- Build an ML model that uses ONLY data routinely collected within 72 hours
+  of stroke admission (no MRI/TMS needed):
+    * NIHSS score (neurological severity score and its sub-items)
+    * SAFE score (shoulder abduction + finger extension test)
+    * Non-Contrast CT (NCCT) scan features (ASPECTS, lesion volume, etc.)
+    * Basic demographics (age, sex, diabetes, hypertension, etc.)
+
+The target prediction (outcome):
+- Will the patient achieve ARAT >= 32 (good hand function) at 3 months?
+- This is a binary classification problem: YES (good recovery) / NO (poor recovery)
+
+--------------------------------------------------------------------------------
+WHAT DOES THE INDUSTRY / CLIENT NEED FROM US?
+--------------------------------------------------------------------------------
+
+1. DATA PIPELINE
+   - Process patient data collected at baseline (<72h of stroke admission)
+   - Features: NIHSS items, SAFE score, finger extension, CT scan metrics,
+     demographics, comorbidities (diabetes, hypertension, atrial fibrillation)
+   - Outcome: ARAT score at 3 months (binarized: >=32 = good, <32 = poor)
+
+2. MACHINE LEARNING MODELS
+   - Build and compare three ML models:
+       a) XGBoost
+       b) Random Forest
+       c) TabNet (deep learning for tabular data)
+   - Also build baseline comparators:
+       a) Logistic Regression
+       b) SAFE score alone (rule-based threshold)
+       c) Neurologist clinical judgment
+
+3. MODEL EVALUATION
+   - Primary metric: AUC-ROC (target >= 0.85; SAFE score baseline ~0.75)
+   - Secondary metrics: Sensitivity, Specificity, PPV, NPV, Brier Score,
+     Calibration plot
+   - Statistical comparison: DeLong test between models
+   - Subgroup analyses: Age >65, NIHSS >15, patients with no finger extension
+
+4. INTERPRETABILITY (EXPLAINABILITY)
+   - Use SHAP (SHapley Additive exPlanations) to identify the top 5 most
+     important predictors for the Indian stroke population
+   - Required for clinical trust and publication
+
+5. VALIDATION
+   - Internal validation: on the development cohort (n=350 patients)
+   - External validation: on a separate cohort (n=150 patients)
+   - Cross-validation strategy for robustness
+
+6. WEB-BASED CALCULATOR (FINAL DELIVERABLE)
+   - A free, open-access web tool that clinicians can use at the bedside
+   - Input: routine clinical + CT values
+   - Output: probability of good hand recovery at 3 months
+   - Designed for use in Indian stroke units by Day 3 of admission
+
+7. OPEN DATASET
+   - Anonymized dataset to be made publicly available for future research
+
+--------------------------------------------------------------------------------
+DATASET STRUCTURE (FEATURES WE WILL WORK WITH)
+--------------------------------------------------------------------------------
+
+CLINICAL FEATURES (collected at bedside <72h):
+  - Age, Sex, Handedness
+  - NIHSS total score + individual items (motor arm, motor leg, etc.)
+  - SAFE score (Shoulder Abduction + Finger Extension, 0-10)
+  - Finger Extension: Yes/No
+  - Trunk Control Test score
+  - Comorbidities: Diabetes (DM), Hypertension (HTN), Atrial Fibrillation (AF)
+  - Time from stroke onset to assessment
+
+CT SCAN FEATURES (from non-contrast CT, rated by radiologist):
+  - ASPECTS score (Alberta Stroke Program Early CT Score, 0-10)
+  - CST involvement: Yes/No (Corticospinal Tract)
+  - Lesion volume (in cc/mL)
+  - Side of lesion (Left/Right)
+
+TARGET / OUTCOME (collected at 3 months):
+  - ARAT score (Action Research Arm Test, 0-57)
+  - Binarized: ARAT >= 32 = GOOD recovery (1), ARAT < 32 = POOR recovery (0)
+  - Also collected: Fugl-Meyer UE Hand, Box & Block Test, mRS
+
+--------------------------------------------------------------------------------
+SAMPLE SIZE
+--------------------------------------------------------------------------------
+  - Development cohort: 350 patients
+  - External validation cohort: 150 patients
+  - Total: 500 patients
+  - Expected events (good recovery): ~140 out of 350 (~40%)
+
+--------------------------------------------------------------------------------
+TECH STACK REQUIRED
+--------------------------------------------------------------------------------
+  - Language: Python (primary) + R (statistics/calibration)
+  - ML Libraries: scikit-learn, XGBoost, PyTorch/TabNet
+  - Explainability: SHAP
+  - Data Management: REDCap (source), CSV/Excel for modeling
+  - Web Tool: Flask / Streamlit / FastAPI (for the web calculator)
+  - Reporting: TRIPOD-AI guidelines compliance
+
+--------------------------------------------------------------------------------
+WHAT WE NEED TO BUILD — STEP BY STEP
+--------------------------------------------------------------------------------
+
+PHASE 1 — Data Preparation
+  [ ] Load and clean the patient dataset
+  [ ] Handle missing values (multiple imputation or model-based)
+  [ ] Feature engineering (e.g., binarize ARAT, encode categoricals)
+  [ ] Exploratory Data Analysis (EDA) + class balance check
+
+PHASE 2 — Baseline Models
+  [ ] Logistic Regression
+  [ ] SAFE score threshold classifier
+
+PHASE 3 — ML Models
+  [ ] Random Forest
+  [ ] XGBoost
+  [ ] TabNet
+
+PHASE 4 — Evaluation
+  [ ] AUC-ROC curves for all models
+  [ ] Sensitivity, Specificity, PPV, NPV
+  [ ] Brier Score + Calibration plots
+  [ ] DeLong test for model comparison
+  [ ] Subgroup analyses
+
+PHASE 5 — Interpretability
+  [ ] SHAP summary plots
+  [ ] SHAP waterfall/force plots per patient
+  [ ] Top 5 predictor identification
+
+PHASE 6 — Validation
+  [ ] Internal cross-validation (k-fold)
+  [ ] External validation on held-out cohort (n=150)
+
+PHASE 7 — Web Calculator
+  [ ] Build a web app (Streamlit recommended for speed)
+  [ ] Input form for clinical features
+  [ ] Output: probability score + risk category
+  [ ] Deploy (free hosting: Hugging Face Spaces or Streamlit Cloud)
+
+--------------------------------------------------------------------------------
+SUMMARY IN ONE LINE:
+--------------------------------------------------------------------------------
+Build a clinically-validated, interpretable ML model + web tool that predicts
+3-month hand recovery after stroke using only routine bedside and CT data,
+targeted at Indian hospitals that lack MRI/TMS access.
+================================================================================

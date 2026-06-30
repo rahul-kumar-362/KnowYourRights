@@ -1,0 +1,36 @@
+"""End-to-end scan of the real cloned target. Skipped if it is not present."""
+
+import pathlib
+
+import pytest
+
+from scanner.engine import scan_path
+
+_CANDIDATES = [
+    pathlib.Path(r"C:\bugBounty\targets\coinbase-advanced-py"),
+    pathlib.Path(r"C:\bugBounty\repos\coinbase-advanced-py"),
+    pathlib.Path(r"C:\bugBounty\coinbase-advanced-py"),
+]
+TARGET = next((p for p in _CANDIDATES if p.exists()), None)
+
+pytestmark = pytest.mark.skipif(TARGET is None, reason="coinbase-advanced-py not cloned")
+
+
+def test_finds_ssl_issue_at_websocket_base_150():
+    hits = [
+        f
+        for f in scan_path(TARGET)
+        if f.rule_id == "PY-SSL-001" and f.file.endswith("websocket/websocket_base.py")
+    ]
+    assert len(hits) == 1
+    assert hits[0].line == 150
+    assert hits[0].severity == "HIGH"
+
+
+def test_no_findings_under_tests_dir():
+    assert [f for f in scan_path(TARGET) if "tests/" in f.file] == []
+
+
+def test_results_are_high_signal():
+    findings = scan_path(TARGET)
+    assert len(findings) <= 5, [(f.rule_id, f.file, f.line) for f in findings]

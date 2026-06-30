@@ -1,0 +1,216 @@
+{
+  "_purpose": "Independent multi-source ground-truth sample (NCRB + devgan + bare-acts via background research workflow) for regression-testing the BNSS First Schedule parser. cognizable/bailable verified 15/15 against bns.json.",
+  "count": 15,
+  "sections": [
+    {
+      "section": "103",
+      "offence": "Murder",
+      "cognizable": "Cognizable",
+      "bailable": "Non-bailable",
+      "compoundable": "No",
+      "court": "Court of Session",
+      "confidence": "high",
+      "sources": [
+        "https://devgan.in/bns/section/103/",
+        "https://cytrain.ncrb.gov.in/staticpage/web_pages/ScheduleBNSS.html",
+        "https://www.advocatekhoj.com/library/bareacts/bharatiyanagarik2023/359.php"
+      ]
+    },
+    {
+      "section": "105",
+      "offence": "Culpable homicide not amounting to murder",
+      "cognizable": "Cognizable",
+      "bailable": "Non-bailable",
+      "compoundable": "No",
+      "court": "Court of Session",
+      "confidence": "high",
+      "sources": [
+        "https://devgan.in/bns/section/105/",
+        "https://upload.indiacode.nic.in/schedulefile?aid=AC_CEN_5_23_00049_202346_1719552320687&rid=1191",
+        "https://www.advocatekhoj.com/library/bareacts/bharatiyanagarik2023/359.php"
+      ]
+    },
+    {
+      "section": "109",
+      "offence": "Attempt to murder",
+      "cognizable": "Cognizable",
+      "bailable": "Non-bailable",
+      "compoundable": "No",
+      "court": "Court of Session",
+      "confidence": "high",
+      "sources": [
+        "https://devgan.in/bns/section/109/",
+        "https://www.marriagesolution.in/bns_section/109-bns/",
+        "https://www.apnilaw.com/bare-act/bns/section-109-bharatiya-nyaya-sanhita-bns-attempt-to-murder/"
+      ]
+    },
+    {
+      "section": "115",
+      "offence": "Voluntarily causing hurt",
+      "cognizable": "Non-cognizable",
+      "bailable": "Bailable",
+      "compoundable": "Yes",
+      "court": "Any Magistrate",
+      "confidence": "high",
+      "sources": [
+        "https://upload.indiacode.nic.in/schedulefile?aid=AC_CEN_5_23_00049_202346_1719552320687&rid=1191",
+        "https://devgan.in/bns/section/115/",
+        "https://lawrato.com/bharatiya-nyaya-sanhita/bns-section-115"
+      ]
+    },
+    {
+      "section": "137",
+      "offence": "Kidnapping",
+      "cognizable": "Cognizable",
+      "bailable": "Bailable",
+      "compoundable": "No",
+      "court": "Magistrate of the first class",
+      "confidence": "high",
+      "sources": [
+        "https://devgan.in/bns/section/137/",
+        "https://lawrato.com/bharatiya-nyaya-sanhita/bns-section-137",
+        "https://www.advocatekhoj.com/library/bareacts/bharatiyanagarik2023/359.php"
+      ]
+    },
+    {
+      "section": "140",
+      "offence": "Kidnapping for ransom / with intent",
+      "cognizable": "Cognizable",
+      "bailable": "Non-bailable",
+      "compoundable": "No",
+      "court": "Varies — Court of Session for sub-sections 140(1), 140(2), and 140(4); Magistrate of the first class for sub-section 140(3)",
+      "confidence": "high",
+      "sources": [
+        "https://cytrain.ncrb.gov.in/staticpage/web_pages/ScheduleBNSS.html",
+        "https://devgan.in/bns/section/140/",
+        "https://upload.indiacode.nic.in/schedulefile?aid=AC_CEN_5_23_00049_202346_1719552320687&rid=1191"
+      ]
+    },
+    {
+      "section": "64",
+      "offence": "Rape",
+      "cognizable": "Cognizable",
+      "bailable": "Non-bailable",
+      "compoundable": "No",
+      "court": "Court of Session",
+      "confidence": "high",
+      "sources": [
+        "https://devgan.in/bns/section/64/",
+        "https://upload.indiacode.nic.in/schedulefile?aid=AC_CEN_5_23_00049_202346_1719552320687&rid=1191",
+        "https://cytrain.ncrb.gov.in/staticpage/web_pages/ScheduleBNSS.html"
+      ]
+    },
+    {
+      "section": "70",
+      "offence": "Gang rape",
+      "cognizable": "Cognizable",
+      "bailable": "Non-bailable",
+      "compoundable": "No",
+      "court": "Court of Session",
+      "confidence": "high",
+      "sources": [
+        "https://devgan.in/bns/section/70/",
+        "https://cytrain.ncrb.gov.in/staticpage/web_pages/ScheduleBNSS.html",
+        "https://www.aslcinstitute.com/blogs/offences-and-punishments-relating-to-rape-under-the-bns--sections-63-73-J5c8emDp"
+      ]
+    },
+    {
+      "section": "80",
+      "offence": "Dowry death",
+      "cognizable": "Cognizable",
+      "bailable": "Non-bailable",
+      "compoundable": "No",
+      "court": "Court of Session",
+      "confidence": "high",
+      "sources": [
+        "https://devgan.in/bns/section/80/",
+        "https://lawrato.com/bharatiya-nyaya-sanhita/bns-section-80",
+        "https://kanoongpt.in/bare-acts/the-bharatiya-nagarik-suraksha-sanhita-2023/the-first-schedule-classification-of-offences-i-offences-under-the-bharatiya-nyaya-sanhita-section-80-to-110-02f0fff869a3ff0a"
+      ]
+    },
+    {
+      "section": "85",
+      "offence": "Cruelty by husband or relatives",
+      "cognizable": "Cognizable",
+      "bailable": "Non-bailable",
+      "compoundable": "No",
+      "court": "Magistrate of the first class",
+      "confidence": "high",
+      "sources": [
+        "https://devgan.in/bns/section/85/",
+        "https://testbook.com/judiciary-notes/section-85-bns",
+        "https://www.advocatekhoj.com/library/bareacts/bharatiyanagarik2023/359.php"
+      ]
+    },
+    {
+      "section": "303",
+      "offence": "Theft",
+      "cognizable": "Varies",
+      "bailable": "Varies",
+      "compoundable": "Yes",
+      "court": "Any Magistrate (excluding Executive Magistrates)",
+      "confidence": "high",
+      "sources": [
+        "https://upload.indiacode.nic.in/schedulefile?aid=AC_CEN_5_23_00049_202346_1719552320687&rid=1191",
+        "https://cytrain.ncrb.gov.in/staticpage/web_pages/ScheduleBNSS.html",
+        "https://www.advocatekhoj.com/library/bareacts/bharatiyanagarik2023/359.php"
+      ]
+    },
+    {
+      "section": "305",
+      "offence": "Theft in a dwelling house / transport",
+      "cognizable": "Cognizable",
+      "bailable": "Non-bailable",
+      "compoundable": "No",
+      "court": "Any Magistrate",
+      "confidence": "high",
+      "sources": [
+        "https://devgan.in/bns/section/305/",
+        "https://lawrato.com/bharatiya-nyaya-sanhita/bns-section-305",
+        "https://www.advocatekhoj.com/library/bareacts/bharatiyanagarik2023/359.php"
+      ]
+    },
+    {
+      "section": "308",
+      "offence": "Extortion",
+      "cognizable": "Cognizable",
+      "bailable": "Varies",
+      "compoundable": "No",
+      "court": "Magistrate of the first class (Varies: sub-section 308(3) is triable by Any Magistrate)",
+      "confidence": "high",
+      "sources": [
+        "https://cytrain.ncrb.gov.in/staticpage/web_pages/ScheduleBNSS.html",
+        "https://devgan.in/bns/section/308/",
+        "https://lawrato.com/bharatiya-nyaya-sanhita/bns-section-308"
+      ]
+    },
+    {
+      "section": "309",
+      "offence": "Robbery",
+      "cognizable": "Cognizable",
+      "bailable": "Non-bailable",
+      "compoundable": "No",
+      "court": "Magistrate of the first class",
+      "confidence": "high",
+      "sources": [
+        "https://cytrain.ncrb.gov.in/staticpage/web_pages/ScheduleBNSS.html",
+        "https://kanoongpt.in/bare-acts/the-bharatiya-nagarik-suraksha-sanhita-2023/the-first-schedule-classification-of-offences-i-offences-under-the-bharatiya-nyaya-sanhita-section-300-to-329-be92ed7cfc8cfd99",
+        "https://devgan.in/bns/section/309/"
+      ]
+    },
+    {
+      "section": "316",
+      "offence": "Criminal breach of trust",
+      "cognizable": "Cognizable",
+      "bailable": "Non-bailable",
+      "compoundable": "Varies",
+      "court": "Magistrate of the first class",
+      "confidence": "high",
+      "sources": [
+        "https://kanoongpt.in/bare-acts/the-bharatiya-nagarik-suraksha-sanhita-2023/the-first-schedule-classification-of-offences-i-offences-under-the-bharatiya-nyaya-sanhita-section-316-to-326-a91e0e00a7c2184d",
+        "https://devgan.in/bns/section/316/",
+        "https://lawrato.com/bharatiya-nyaya-sanhita/bns-section-316"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+"""PY-SEC-001 — Hardcoded credential.
+
+Flags a secret-named assignment or keyword argument whose value is a *string
+literal* with real entropy. Environment reads, name references, f-strings,
+placeholders, low-entropy identifier strings, and test-fixture names are all
+suppressed. Favors precision: a weak all-lowercase "secret" is intentionally
+not flagged to avoid flagging parameter/field names.
+"""
+
+from __future__ import annotations
+
+import ast
+import re
+from collections.abc import Iterator
+
+from scanner.context import FileContext
+from scanner.models import Confidence, Finding
+from scanner.rules import register
+from scanner.rules.base import Rule
+from scanner.suppression import (
+    is_placeholder,
+    looks_high_entropy,
+    name_is_test_fixture,
+    value_is_literal_secret,
+)
+
+_SECRET_NAME_RE = re.compile(
+    r"(api[_-]?key|secret|passwd|password|token|private[_-]?key|access[_-]?key)",
+    re.IGNORECASE,
+)
+
+
+@register
+class HardcodedSecretRule(Rule):
+    id = "PY-SEC-001"
+    name = "Hardcoded credential"
+    cvss_vector = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+    confidence = Confidence.PROBABLE
+    cwe = "CWE-798"
+    remediation = (
+        "Load secrets from environment variables or a secrets manager; never "
+        "commit credential literals to source control."
+    )
+    references = ("https://cwe.mitre.org/data/definitions/798.html",)
+
+    def analyze(self, ctx: FileContext) -> Iterator[Finding]:
+        for node in ast.walk(ctx.tree):
+            if isinstance(node, ast.Assign):
+                name = self._single_target_name(node)
+                if name and _SECRET_NAME_RE.search(name) and not name_is_test_fixture(name):
+                    yield from self._check(ctx, node.value, name)
+            elif isinstance(node, ast.Call):
+                for kw in node.keywords:
+                    if (
+                        kw.arg
+                        and _SECRET_NAME_RE.search(kw.arg)
+                        and not name_is_test_fixture(kw.arg)
+                    ):
+                        yield from self._check(ctx, kw.value, kw.arg)
+
+    def _check(self, ctx: FileContext, value_node: ast.AST, name: str) -> Iterator[Finding]:
+        literal = value_is_literal_secret(value_node)
+        if literal is None:
+            return  # env read / name ref / f-string -> not a hardcoded literal
+        if is_placeholder(literal.value):
+            return
+        confidence = (
+            Confidence.CONFIRMED if looks_high_entropy(literal.value) else Confidence.PROBABLE
+        )
+        yield self.finding(
+            ctx,
+            literal,
+            message=(
+                f"Hardcoded secret assigned to `{name}`: the value is a string "
+                f"literal, not a read from an environment variable or secrets manager."
+            ),
+            confidence=confidence,
+        )
+
+    @staticmethod
+    def _single_target_name(node: ast.Assign):
+        if len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            return node.targets[0].id
+        return None

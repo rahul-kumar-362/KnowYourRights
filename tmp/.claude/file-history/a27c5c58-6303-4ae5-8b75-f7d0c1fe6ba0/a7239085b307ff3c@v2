@@ -1,0 +1,176 @@
+"""
+Phase 1 — Synthetic Data Generation
+Generates 500 realistic patients matching the stroke hand recovery study design:
+  - 350 development cohort
+  - 150 external validation cohort
+Features mirror what would be collected in a real Indian stroke unit <72h.
+Outcome: ARAT >= 32 at 3 months (binary: 1=good recovery, 0=poor)
+"""
+
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+np.random.seed(42)
+N_DEV = 350
+N_VAL = 150
+N_TOTAL = N_DEV + N_VAL
+
+# ------------------------------------------------------------------
+# Helper: clip to valid range
+# ------------------------------------------------------------------
+def clip(arr, lo, hi):
+    return np.clip(arr, lo, hi)
+
+# ------------------------------------------------------------------
+# Demographics
+# ------------------------------------------------------------------
+age       = np.random.normal(62, 12, N_TOTAL).astype(int)
+age       = clip(age, 18, 90)
+sex       = np.random.binomial(1, 0.55, N_TOTAL)          # 1=Male, 0=Female
+handedness = np.random.binomial(1, 0.90, N_TOTAL)          # 1=Right, 0=Left
+
+# Comorbidities (prevalence typical for Indian stroke cohort)
+htn = np.random.binomial(1, 0.65, N_TOTAL)                 # Hypertension
+dm  = np.random.binomial(1, 0.40, N_TOTAL)                 # Diabetes
+af  = np.random.binomial(1, 0.15, N_TOTAL)                 # Atrial Fibrillation
+
+# Time from stroke onset to assessment (hours, within 72h)
+time_to_assess = np.random.uniform(6, 72, N_TOTAL).round(1)
+
+# ------------------------------------------------------------------
+# NIHSS total (correlated with severity; 0-42)
+# Moderate strokes overrepresented (admission bias)
+# ------------------------------------------------------------------
+nihss_total = np.random.gamma(shape=3, scale=3, size=N_TOTAL).astype(int)
+nihss_total = clip(nihss_total, 1, 30)
+
+# NIHSS sub-items (relevant to upper limb)
+nihss_motor_arm   = np.minimum(nihss_total // 4 + np.random.randint(0, 3, N_TOTAL), 4)
+nihss_motor_arm   = clip(nihss_motor_arm, 0, 4)
+nihss_consciousness = (nihss_total > 15).astype(int)
+nihss_sensory     = clip(np.random.randint(0, 3, N_TOTAL), 0, 2)
+nihss_neglect     = clip(np.random.randint(0, 3, N_TOTAL), 0, 2)
+
+# ------------------------------------------------------------------
+# SAFE score (Shoulder Abduction + Finger Extension, 0-10)
+# Higher NIHSS → lower SAFE
+# ------------------------------------------------------------------
+safe_base = 10 - (nihss_total * 0.25) + np.random.normal(0, 1.5, N_TOTAL)
+safe_score = clip(safe_base.round().astype(int), 0, 10)
+
+# Finger extension binary (correlated with SAFE >=5)
+finger_extension = (safe_score >= 5).astype(int)
+# Add some noise
+flip_idx = np.random.choice(N_TOTAL, size=int(N_TOTAL * 0.08), replace=False)
+finger_extension[flip_idx] = 1 - finger_extension[flip_idx]
+
+# Trunk Control Test (0-100)
+tct = clip(np.random.normal(70, 20, N_TOTAL).round().astype(int), 0, 100)
+
+# ------------------------------------------------------------------
+# CT features
+# ------------------------------------------------------------------
+# ASPECTS score (0-10; higher = less damage; correlated with severity)
+aspects = clip((10 - nihss_total * 0.2 + np.random.normal(0, 1.5, N_TOTAL)).round().astype(int), 0, 10)
+
+# CST involvement (Corticospinal Tract) — worse prognosis
+cst_involved = np.where(
+    nihss_motor_arm >= 3,
+    np.random.binomial(1, 0.70, N_TOTAL),
+    np.random.binomial(1, 0.25, N_TOTAL)
+)
+
+# Lesion volume (cc) — correlated with severity
+lesion_volume = np.random.gamma(shape=2, scale=8, size=N_TOTAL)
+lesion_volume = lesion_volume * (1 + nihss_total * 0.05)
+lesion_volume = clip(lesion_volume.round(1), 0.5, 150)
+
+# Side of lesion (0=Left, 1=Right)
+lesion_side = np.random.binomial(1, 0.50, N_TOTAL)
+
+# ------------------------------------------------------------------
+# OUTCOME: ARAT >= 32 at 3 months
+# Logistic model driven by clinically meaningful predictors
+# ------------------------------------------------------------------
+log_odds = (
+    2.0                              # intercept
+    - 0.30 * nihss_total             # higher NIHSS → worse
+    + 0.25 * safe_score              # higher SAFE → better
+    + 0.80 * finger_extension        # finger ext → strong predictor
+    + 0.15 * aspects                 # better CT → better
+    - 0.50 * cst_involved            # CST hit → worse
+    - 0.03 * lesion_volume           # larger lesion → worse
+    - 0.02 * age                     # older → worse
+    + 0.15 * tct / 20                # better trunk → better
+    + np.random.normal(0, 0.5, N_TOTAL)  # residual noise
+)
+prob_good = 1 / (1 + np.exp(-log_odds))
+arat_binary = np.random.binomial(1, prob_good)
+
+# Continuous ARAT for reference (not used in primary model)
+arat_continuous = np.where(
+    arat_binary == 1,
+    clip(np.random.normal(45, 8, N_TOTAL), 32, 57),
+    clip(np.random.normal(15, 10, N_TOTAL), 0, 31)
+).round().astype(int)
+
+# ------------------------------------------------------------------
+# Assemble DataFrame
+# ------------------------------------------------------------------
+df = pd.DataFrame({
+    # Demographics
+    "age": age,
+    "sex": sex,                          # 1=Male, 0=Female
+    "handedness": handedness,            # 1=Right, 0=Left
+    # Comorbidities
+    "hypertension": htn,
+    "diabetes": dm,
+    "atrial_fibrillation": af,
+    # Timing
+    "time_to_assess_hr": time_to_assess,
+    # NIHSS
+    "nihss_total": nihss_total,
+    "nihss_motor_arm": nihss_motor_arm,
+    "nihss_consciousness": nihss_consciousness,
+    "nihss_sensory": nihss_sensory,
+    "nihss_neglect": nihss_neglect,
+    # Clinical
+    "safe_score": safe_score,
+    "finger_extension": finger_extension,  # 1=Yes, 0=No
+    "trunk_control_test": tct,
+    # CT
+    "aspects": aspects,
+    "cst_involved": cst_involved,          # 1=Yes, 0=No
+    "lesion_volume_cc": lesion_volume,
+    "lesion_side": lesion_side,            # 0=Left, 1=Right
+    # Outcome
+    "arat_continuous": arat_continuous,
+    "arat_good_recovery": arat_binary,     # TARGET: 1=ARAT>=32, 0=ARAT<32
+})
+
+# Assign cohort
+df["cohort"] = ["development"] * N_DEV + ["validation"] * N_VAL
+
+# Patient ID
+df.insert(0, "patient_id", [f"PT{str(i+1).zfill(4)}" for i in range(N_TOTAL)])
+
+# ------------------------------------------------------------------
+# Save
+# ------------------------------------------------------------------
+out_dir = Path(__file__).parent
+df.to_csv(out_dir / "raw" / "stroke_dataset.csv", index=False)
+
+dev_df = df[df["cohort"] == "development"].reset_index(drop=True)
+val_df = df[df["cohort"] == "validation"].reset_index(drop=True)
+
+dev_df.to_csv(out_dir / "raw" / "development_cohort.csv", index=False)
+val_df.to_csv(out_dir / "raw" / "validation_cohort.csv", index=False)
+
+print(f"Dataset generated: {N_TOTAL} patients")
+print(f"  Development : {N_DEV} | Good recovery: {dev_df['arat_good_recovery'].sum()} ({dev_df['arat_good_recovery'].mean()*100:.1f}%)")
+print(f"  Validation  : {N_VAL} | Good recovery: {val_df['arat_good_recovery'].sum()} ({val_df['arat_good_recovery'].mean()*100:.1f}%)")
+print(f"\nFiles saved:")
+print(f"  data/raw/stroke_dataset.csv")
+print(f"  data/raw/development_cohort.csv")
+print(f"  data/raw/validation_cohort.csv")

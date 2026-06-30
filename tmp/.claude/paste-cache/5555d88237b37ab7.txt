@@ -1,0 +1,106 @@
+Skip to main content  >
+Hackerone logo
+
+
+
+rahul_kumar_362
+
+Hai
+Add your collaborators if you collaborated on the report. Learn more about collaboration here.
+#3804219
+
+Submitted with Report Assistant
+WebSocket TLS certificate verification disabled in coinbase-advanced-py SDK (MITM + JWT token theft)
+
+Report
+Add Hacker summary
+Timeline · export
+rahul_kumar_362 submitted a report to Coinbase.
+less than a minute ago
+NOTE! Thanks for submitting a report! Please replace all the [square] sections below with the pertinent details. Remember, the more detail you provide, the easier it is for us to verify and then potentially issue a bounty, so be sure to take your time filling out the report!
+Description:
+coinbase/websocket/websocket_base.py (line 150, open_async()), the SDK passes a bare ssl.SSLContext() to websockets.connect():
+ssl=ssl.SSLContext() if self.base_url.startswith("wss://") else None,
+A bare ssl.SSLContext() defaults to verify_mode=CERT_NONE and check_hostname=False, so the server certificate and hostname are NOT validated. The default base_url is wss://advanced-trade-ws.coinbase.com, so this branch executes on every default deployment. Confirmed present through v1.8.3.
+An attacker on the network path (rogue Wi-Fi/AP, malicious proxy, ARP/DNS spoofing, compromised upstream) can present any self-signed certificate and the client accepts it — a man-in-the-middle. Worse, immediately after the handshake the client transmits an authenticated ES256 JWT bearer token over this unverified channel: _build_subscription_message() calls jwt_generator.build_ws_jwt(self.api_key, self.api_secret) and subscribe_async() sends the JWT inside the subscribe frame. The MITM therefore captures a valid authentication token, not just the data stream.
+Impact:
+A consumer of the SDK on an untrusted network is exposed to: (1) Authentication-token theft — the captured ES256 JWT authenticates to Coinbase until its exp (~120s) and is replayable; (2) Real-time data tampering — the attacker can observe and inject account and market-data frames in both directions. Exploitation requires an active on-path position; it is not exploitable against arbitrary remote users.
+Steps To Reproduce:
+pip install coinbase-advanced-py (confirmed on v1.8.3).
+Confirm the insecure defaults: ctx = ssl.SSLContext(); assert ctx.verify_mode == ssl.CERT_NONE and ctx.check_hostname is False
+Stand up a TLS WebSocket server with a SELF-SIGNED certificate on wss://localhost:8765 (see attached mitm_server.py + generate_cert.py).
+Point a default WSClient at it and call open() then subscribe(["BTC-USD"], ["user"]) (see attached mitm_client.py).
+Result: the client completes the TLS handshake despite the untrusted certificate, and the attacker server receives the subscribe frame containing the client's JWT. Recorded run in attached captured_run.txt:
+[attacker] client completed TLS handshake against our UNTRUSTED cert
+[attacker] received frame from client: {"type":"subscribe",...,"jwt":"eyJhbG..."}
+[attacker] == CAPTURED AUTHENTICATED JWT (token disclosure) ==
+[attacker] JWT claims: {'sub':'organizations/.../poc-key','iss':'cdp','nbf':...,'exp':...}
+(The JWT shown is from a throwaway EC key generated for the PoC — no real Coinbase credential is used.)
+Browsers or Application Versions:
+coinbase-advanced-py v1.8.3 (and master); Python 3.11; not browser-specific.
+Supporting Material/References:
+Attached PoC: generate_cert.py, mitm_server.py, mitm_client.py, README.md, captured_run.txt
+Fix: use ssl.create_default_context() (sets CERT_REQUIRED + hostname check) or omit the ssl= argument so websockets applies its secure default.
+Python ssl.create_default_context: https://docs.python.org/3/library/ssl.html#ssl.create_default_context
+CWE-295: https://cwe.mitre.org/data/definitions/295.html
+Impact
+On an untrusted network, an active on-path attacker can MITM all SDK WebSocket traffic because certificate verification is disabled (bare ssl.SSLContext, CERT_NONE/check_hostname=False, default wss:// endpoint). The attacker presents a self-signed cert, the client accepts it, and the client then leaks its authenticated ES256 JWT (api_key/api_secret-signed) in the subscribe frame — enabling auth-token capture/replay (valid ~120s) plus observation and injection of account and market-data frames. Verified end-to-end by the attached PoC.
+5 attachments
+F6096365: generate_cert.py
+F6096367: mitm_server.py
+F6096372: mitm_client.py
+F6096373: README.md
+F6096374: captured_run.txt
+Bot:
+ 
+posted a comment. 
+less than a minute ago
+Thank you for your submission. This is an acknowledgement that we have received your report. We will review your submission and get back in touch once we've had the opportunity to complete our review.
+[ANNOUNCEMENT] We're excited to announce that HackerOne now supports USDC as a payment option for our valued researchers and partners with Coinbase to offer this option. Embrace USDC for your payouts and enjoy the benefit of earning a 4.1% return on your USDC balance! To see current return rates please reference https://coinbase.com/usdc
+Here are the steps to configure USDC coin via Coinbase as Payout Method:
+Log in on your HackerOne account
+At the top right, click on the down arrow next to your profile pic, and click on “Settings”
+On the menu at the left, scroll down and click on “Payout preferences”
+Now, you need to click on “Add payout method”
+You will now see the option of selecting the payout method in USDC coin via Coinbase
+Regards,
+The Coinbase Security Team
+Leave a comment to all participants
+Drag & drop or
+select more files from your computer (max 250MB per file).
+Record a demo
+
+Post comment
+Reported on
+June 15, 2026, 7:06pm UTC
+Reported by
+rahul_kumar_362
+rahul_kumar_362
+Reported to
+Coinbase
+Participants
+rahul_kumar_362
+
+Report Id
+#3804219
+New (Open)
+Severity
+Medium (4 ~ 6.9)
+Visibility
+Private
+Asset
+Other
+Weakness
+Improper Certificate Validation
+CVE ID
+None
+Bounty
+None
+Retest
+None
+Total reward
+None
+Account details
+None
+Signed in successfully.
+

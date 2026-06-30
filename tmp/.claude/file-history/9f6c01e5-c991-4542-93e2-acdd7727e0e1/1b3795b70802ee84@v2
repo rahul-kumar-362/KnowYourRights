@@ -1,0 +1,10 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def log_progress(remote_name, count):
+    # No credential-shaped name in the arguments.
+    logger.info(f"Configuring remote '{remote_name}': {count} refs")
+    logger.warning("password policy updated")  # constant text, no interpolated value
+    logger.error("operation failed for %s", remote_name)

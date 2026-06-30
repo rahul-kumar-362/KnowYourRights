@@ -1,0 +1,39 @@
+# PoC: WebSocket TLS certificate verification bypass in coinbase-advanced-py
+
+Demonstrates CWE-295 in `coinbase/websocket/websocket_base.py:150`, where the SDK
+passes a bare `ssl.SSLContext()` to `websockets.connect()`. A bare context has
+`verify_mode=CERT_NONE` and `check_hostname=False`, so the client accepts any
+certificate. This PoC shows an on-path attacker (1) completing the TLS handshake
+with a self-signed cert the real endpoint would never present, and (2) capturing
+the authenticated `ES256` JWT bearer the client then sends in its subscribe frame.
+
+## Files
+
+- `generate_cert.py` — writes a self-signed server cert (`cert.pem`/`key.pem`) and
+  a throwaway EC key (`fake_api_secret.pem`) used as the SDK `api_secret` so
+  `jwt_generator.build_ws_jwt()` produces a real token. No genuine credentials.
+- `mitm_server.py` — attacker: a TLS WebSocket server on `wss://localhost:8765`
+  presenting the untrusted cert; decodes any JWT it receives.
+- `mitm_client.py` — victim: a stock `WSClient` pointed at the attacker. It does
+  **not** disable TLS itself; the SDK does that internally.
+- `captured_run.txt` — recorded attacker-side output from a successful run.
+
+## Run
+
+```bash
+pip install websockets PyJWT cryptography
+python generate_cert.py
+python mitm_server.py &                       # attacker
+PYTHONPATH=/path/to/coinbase-advanced-py python mitm_client.py   # victim
+```
+
+## Expected result
+
+The client logs `connection ACCEPTED despite untrusted cert`, and the server
+prints the decoded JWT header/claims — proving both the cert-validation bypass
+and the resulting auth-token disclosure to the MITM.
+
+## Fix
+
+Use `ssl.create_default_context()` (sets `CERT_REQUIRED` + hostname check), or
+omit the `ssl=` argument so `websockets` applies its secure default.

@@ -1,0 +1,15 @@
+from scanner.engine import scan_path
+from tests._helpers import FIX, marker_lines
+
+RULE = "PY-EXEC-001"
+
+
+def test_flags_eval_and_shell_true():
+    fx = FIX / "dangerous" / "vuln_dynamic_exec.py"
+    hits = sorted(f.line for f in scan_path(fx) if f.rule_id == RULE)
+    assert hits == marker_lines(fx, RULE)
+
+
+def test_static_eval_and_no_shell_are_silent():
+    fx = FIX / "dangerous" / "safe_static.py"
+    assert [f for f in scan_path(fx) if f.rule_id == RULE] == []

@@ -1,0 +1,14 @@
+{
+  "findings": [
+    {
+      "fingerprint": "7b18ad89c73c8c2e",
+      "rule_id": "PY-SSL-001",
+      "file": "coinbase/websocket/websocket_base.py",
+      "line": 150,
+      "status": "reported",
+      "reported_to": "HackerOne/Coinbase #3804219 (2026-06-15, asset=Other, severity=Medium)",
+      "cve": null,
+      "note": "MITM cert-validation bypass + ES256 JWT capture; PoC verified. Asset not formally in Coinbase scope; submitted under Other."
+    }
+  ]
+}

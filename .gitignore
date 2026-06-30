@@ -1,0 +1,41 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# next
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# env
+.env
+.env*.local
+.env.production
+
+# prisma
+/prisma/migrations/dev.db*
+
+# logs
+*.log
+npm-debug.log*
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# misc
+/coverage
+*.tsbuildinfo
+/data/index/*.json
+/data/raw/
+
+# sqlite dev db
+/prisma/dev.db
+/prisma/dev.db-journal

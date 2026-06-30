@@ -1,0 +1,545 @@
+import json, re
+from fpdf import FPDF
+from fpdf.enums import XPos, YPos
+
+# ---------------------------------------------------------------- data load
+SRC = r"C:/Users/HP/AppData/Local/Temp/claude/C--roadtoGrandMaster/316d15cb-30c9-4c43-b058-2e86077d6d51/scratchpad/wf_partial.json"
+data = json.load(open(SRC, encoding="utf-8"))
+research = {r["category"]: r["resources"] for r in data["research"]}
+# verify-stage corrections (where available) override research
+for v in data.get("verify", []):
+    kept = [x for x in v["resources"] if x.get("verified") and x.get("confidence") != "low"]
+    if kept:
+        research[v["category"]] = kept
+
+def clean(s):
+    if s is None:
+        return ""
+    s = str(s)
+    repl = {
+        "—": "-", "–": "-", "‒": "-", "−": "-",
+        "‘": "'", "’": "'", "“": '"', "”": '"',
+        "…": "...", "•": "-", " ": " ", "€": "EUR ",
+        "é": "e", "ü": "u", "ö": "o", "ä": "a",
+        "á": "a", "í": "i", "ó": "o", "è": "e", "ç": "c",
+    }
+    for k, val in repl.items():
+        s = s.replace(k, val)
+    s = re.sub(r"�(?=\s*\d)", "EUR ", s)
+    s = s.replace("�", "-")
+    s = "".join(ch if ord(ch) < 256 else "?" for ch in s)
+    return s
+
+# friendly category metadata: key in json -> (display title, blurb, icon-color)
+CATS = [
+    ("Black vs 1.e4 � Sicilian Najdorf", "Black vs 1.e4 - Sicilian Najdorf",
+     "Your #1 fix: Black win rate 32% vs 48% White. Consolidate on one Sicilian.", (239, 68, 68)),
+    ("Black vs 1.d4 / 1.c4 / 1.Nf3", "Black vs 1.d4 / 1.c4 / 1.Nf3",
+     "A coherent Nimzo-Indian system with a backup when 3.Nf3 dodges the Nimzo.", (239, 68, 68)),
+    ("White Repertoire Courses", "White Repertoire (1.e4)",
+     "Consolidate the Open Sicilian, settle e5 (Italian/Ruy), tidy French & Caro.", (59, 130, 246)),
+    ("Tactics & Calculation Training", "Tactics & Calculation",
+     "You see tactics (2073-2212) - now build SPEED & depth to close the blitz gap.", (245, 158, 11)),
+    ("King Safety, Attack & Defense", "King Safety, Attack & Defense",
+     "Directly targets your king-safety losses; sharpens your attacking instinct.", (168, 85, 247)),
+    ("Positional / Strategy / Middlegame", "Positional / Strategy / Middlegame",
+     "The 1700->2200 unlock - fixes losing the thread after the opening.", (34, 197, 94)),
+    ("Endgame Mastery", "Endgame Mastery",
+     "Your most undertrained phase. 20% of study time belongs here.", (16, 185, 129)),
+    ("Master Game Collections & Classics", "Master Game Collections & Classics",
+     "Pattern & plan absorption through annotated classics - suits your sharp style.", (217, 119, 6)),
+    ("Improvement Methodology & OTB Prep", "Improvement Method & OTB Prep",
+     "How to train, analyze your own games, and prepare for your FIRST FIDE events.", (14, 165, 233)),
+    ("Video Courses & YouTube Channels", "Video Courses & YouTube",
+     "Structured free + premium video - which exact series a 2000 should watch.", (236, 72, 153)),
+    ("Interactive Platforms & Training Tools", "Platforms & Training Tools",
+     "Spaced-repetition, weakness analytics, analysis & database tooling.", (99, 102, 241)),
+    ("Coaching, Academies & Structured Programs", "Coaching & Academies",
+     "At the 2000-2200 wall a strong coach is the single biggest accelerator.", (120, 113, 108)),
+]
+
+# ---------------------------------------------------------------- PDF class
+class PDF(FPDF):
+    DARK = (15, 23, 42); GOLD = (212, 175, 55); GOLDL = (255, 215, 80)
+    WHITE = (255, 255, 255); LIGHT = (245, 247, 250); SECT = (30, 41, 59)
+    TXT = (30, 30, 30); MID = (90, 100, 120); GREEN = (34, 197, 94)
+    RED = (239, 68, 68); BLUE = (59, 130, 246); GREY = (120, 120, 130)
+
+    PRI = {"Essential": (212, 175, 55), "Recommended": (59, 130, 246), "Optional": (140, 145, 155)}
+
+    def header(self):
+        if self.page_no() == 1:
+            return
+        self.set_fill_color(*self.DARK); self.rect(0, 0, 210, 11, "F")
+        self.set_font("Helvetica", "B", 8); self.set_text_color(*self.GOLD)
+        self.set_xy(0, 3)
+        self.cell(210, 5, "SCRODINGER -- PERSONALISED CHESS CURRICULUM", align="C")
+        self.set_text_color(*self.TXT)
+
+    def footer(self):
+        if self.page_no() == 1:
+            return
+        self.set_y(-11); self.set_fill_color(*self.DARK); self.rect(0, self.get_y(), 210, 11, "F")
+        self.set_font("Helvetica", "", 7); self.set_text_color(*self.GOLD)
+        self.cell(0, 7, "Page " + str(self.page_no()) + "  |  Curated from 12-stream web research, June 2026", align="C")
+        self.set_text_color(*self.TXT)
+
+    def h1(self, t):
+        self.ln(3); self.set_font("Helvetica", "B", 19); self.set_text_color(*self.GOLD)
+        self.cell(0, 10, t, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.set_draw_color(*self.GOLD); self.set_line_width(0.6)
+        self.line(self.l_margin, self.get_y(), 210 - self.r_margin, self.get_y())
+        self.ln(3); self.set_text_color(*self.TXT)
+
+    def h2(self, t, color=None):
+        color = color or self.SECT; self.ln(2); y = self.get_y()
+        if y > 250:
+            self.add_page(); y = self.get_y()
+        self.set_fill_color(*color); self.rect(self.l_margin, y, 190, 8, "F")
+        self.set_font("Helvetica", "B", 11); self.set_text_color(*self.WHITE)
+        self.set_xy(self.l_margin + 3, y + 1)
+        self.cell(0, 6, t, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.set_text_color(*self.TXT); self.ln(2)
+
+    def body(self, t, size=9.5, color=None):
+        self.set_font("Helvetica", "", size); self.set_text_color(*(color or self.TXT))
+        self.multi_cell(0, 5, t); self.ln(1)
+
+    def table(self, headers, rows, widths, hc=None):
+        hc = hc or self.DARK
+        self.set_font("Helvetica", "B", 8.5); self.set_fill_color(*hc); self.set_text_color(*self.GOLD)
+        for h, w in zip(headers, widths):
+            self.cell(w, 7, h, fill=True, align="C")
+        self.ln()
+        self.set_font("Helvetica", "", 8.5)
+        for ri, row in enumerate(rows):
+            # estimate height by wrapping
+            self.set_fill_color(245, 247, 250) if ri % 2 == 0 else self.set_fill_color(255, 255, 255)
+            self.set_text_color(*self.TXT)
+            for val, w in zip(row, widths):
+                self.cell(w, 6.2, clean(str(val)), fill=True, align="C")
+            self.ln()
+        self.ln(2)
+
+    def resource(self, r):
+        """Render one resource as a compact card with personalized 'why'."""
+        pri = r.get("priority", "Recommended")
+        pc = self.PRI.get(pri, self.PRI["Recommended"])
+        name = clean(r.get("name", ""))
+        prov = clean(r.get("provider", ""))
+        rtype = clean(r.get("rtype", ""))
+        cost = clean(r.get("cost", ""))
+        lvl = clean(r.get("level", ""))
+        why = clean(r.get("why", ""))
+
+        # measure 'why' height to keep card together / page-break cleanly
+        self.set_font("Helvetica", "", 8)
+        lines = self.multi_cell(176, 4.2, why, dry_run=True, output="LINES")
+        why_h = 4.2 * max(1, len(lines))
+        card_h = 9 + why_h + 3
+        if self.get_y() + card_h > 285:
+            self.add_page()
+
+        x0 = self.l_margin; y0 = self.get_y()
+        # priority strip
+        self.set_fill_color(*pc); self.rect(x0, y0, 2.2, card_h - 2, "F")
+        # priority badge
+        self.set_xy(x0 + 4, y0)
+        self.set_font("Helvetica", "B", 6.8); self.set_fill_color(*pc); self.set_text_color(*self.WHITE)
+        bw = 17
+        self.cell(bw, 4, pri.upper(), fill=True, align="C")
+        # name
+        self.set_xy(x0 + 4 + bw + 2, y0 - 0.3)
+        self.set_font("Helvetica", "B", 9.3); self.set_text_color(*self.DARK)
+        self.cell(0, 4.6, name[:78])
+        # provider / type / cost / level line
+        self.set_xy(x0 + 4 + bw + 2, y0 + 4.2)
+        self.set_font("Helvetica", "", 7.6); self.set_text_color(*self.MID)
+        meta = prov
+        if rtype: meta += "  -  " + rtype
+        self.cell(0, 4, meta[:95])
+        # cost + level on right-ish, next line
+        self.set_xy(x0 + 4, y0 + 8.3)
+        self.set_font("Helvetica", "B", 7.8); self.set_text_color(*self.BLUE)
+        self.cell(0, 4, clean(cost) + "    |    Level " + lvl)
+        # why
+        self.set_xy(x0 + 4, y0 + 8.3 + 4.4)
+        self.set_font("Helvetica", "I", 8); self.set_text_color(60, 65, 75)
+        self.set_x(x0 + 4)
+        self.multi_cell(178, 4.2, why)
+        # bottom divider
+        yend = self.get_y() + 1
+        self.set_draw_color(225, 228, 233); self.set_line_width(0.2)
+        self.line(x0, yend, 210 - self.r_margin, yend)
+        self.set_y(yend + 1.5)
+
+# ================================================================ BUILD
+pdf = PDF("P", "mm", "A4")
+pdf.set_auto_page_break(auto=True, margin=14)
+pdf.set_margins(10, 15, 10)
+
+# ---------------- COVER
+pdf.add_page()
+pdf.set_fill_color(*pdf.DARK); pdf.rect(0, 0, 210, 297, "F")
+sq = 7
+for c in range(30):
+    for rr in range(5):
+        pdf.set_fill_color(*(25, 35, 58) if (c + rr) % 2 == 0 else (20, 29, 47))
+        pdf.rect(c * sq, 255 + rr * sq, sq, sq, "F")
+pdf.set_fill_color(*pdf.GOLD); pdf.rect(10, 52, 4, 120, "F")
+pdf.set_font("Helvetica", "B", 33); pdf.set_text_color(*pdf.GOLD)
+pdf.set_xy(20, 56); pdf.cell(0, 16, "PERSONALISED")
+pdf.set_xy(20, 74); pdf.cell(0, 16, "CHESS CURRICULUM")
+pdf.set_font("Helvetica", "", 14); pdf.set_text_color(185, 195, 215)
+pdf.set_xy(20, 96); pdf.cell(0, 8, "A curated course-content library, matched to your game")
+pdf.set_font("Helvetica", "B", 21); pdf.set_text_color(*pdf.GOLDL)
+pdf.set_xy(20, 116); pdf.cell(0, 10, "SCRODINGER")
+pdf.set_draw_color(*pdf.GOLD); pdf.set_line_width(0.4); pdf.line(20, 131, 190, 131)
+pdf.set_font("Helvetica", "", 10); pdf.set_text_color(165, 175, 195)
+pdf.set_xy(20, 135)
+pdf.multi_cell(170, 5.5,
+    "Built from a 12-stream web-research sweep of the best chess resources on the\n"
+    "internet, filtered to your exact ratings, repertoire, strengths and weaknesses.")
+# stat strip
+items = [("113", "Resources\nresearched"), ("12", "Categories\ncovered"),
+         ("~1700", "Est. FIDE\nstart point"), ("2300+", "Near-term\ntarget")]
+for i, (v, l) in enumerate(items):
+    x = 20 + i * 43
+    pdf.set_fill_color(28, 39, 62); pdf.rect(x, 156, 40, 26, "F")
+    pdf.set_fill_color(*pdf.GOLD); pdf.rect(x, 156, 40, 2.5, "F")
+    pdf.set_font("Helvetica", "B", 17); pdf.set_text_color(*pdf.GOLDL)
+    pdf.set_xy(x, 160); pdf.cell(40, 9, v, align="C")
+    pdf.set_font("Helvetica", "", 7); pdf.set_text_color(165, 175, 195)
+    pdf.set_xy(x, 170); pdf.multi_cell(40, 3.6, l, align="C")
+# what's inside
+pdf.set_font("Helvetica", "B", 10); pdf.set_text_color(*pdf.GOLD)
+pdf.set_xy(20, 190); pdf.cell(0, 6, "INSIDE THIS DOCUMENT")
+inside = [
+    "The Essential Stack - exactly what to buy and start first",
+    "Weakness-to-Resource fix matrix - each gap mapped to its cure",
+    "3-phase deployment plan (Foundation / Positional / Expert)",
+    "A concrete weekly training template using these resources",
+    "Full catalog: 113 personalized picks across 12 categories",
+    "Budget tiers - a strong free-only path and a paid fast-track",
+]
+pdf.set_font("Helvetica", "", 9.5); pdf.set_text_color(195, 205, 220)
+yy = 198
+for it in inside:
+    pdf.set_xy(24, yy); pdf.set_text_color(*pdf.GOLD); pdf.cell(5, 5, ">")
+    pdf.set_text_color(195, 205, 220); pdf.cell(160, 5, it); yy += 6.7
+pdf.set_font("Helvetica", "", 8); pdf.set_text_color(110, 120, 140)
+pdf.set_xy(20, 246)
+pdf.cell(0, 5, "Companion to: Scrodinger_GM_Roadmap.pdf   |   Prepared June 2026")
+
+# ---------------- HOW TO USE / PHILOSOPHY
+pdf.add_page()
+pdf.h1("How To Use This Curriculum")
+pdf.body(
+    "This is not a reading list - it is a deployment plan. Every resource here was selected against your actual "
+    "profile: chess.com rapid ~2010, lichess blitz 1707, puzzle strength 2073-2212, a 1.e4 / Sicilian / Nimzo-Indian "
+    "repertoire, and four measured weaknesses (Black results, king safety, calculation speed under the clock, and "
+    "the opening-to-middlegame transition). Resources are tagged by PRIORITY so you always know what matters most.")
+pdf.h2("The Priority System")
+y = pdf.get_y()
+for pri, desc in [("Essential", "Buy/start these first. Core to closing your specific gaps."),
+                  ("Recommended", "High value - add once the Essentials are underway."),
+                  ("Optional", "Excellent but situational, or for a later phase / deeper dive.")]:
+    pc = pdf.PRI[pri]
+    pdf.set_fill_color(*pc); pdf.rect(pdf.l_margin, pdf.get_y(), 28, 6, "F")
+    pdf.set_font("Helvetica", "B", 8); pdf.set_text_color(*pdf.WHITE)
+    pdf.set_xy(pdf.l_margin, pdf.get_y() + 1); pdf.cell(28, 4, pri.upper(), align="C")
+    pdf.set_xy(pdf.l_margin + 31, pdf.get_y()); pdf.set_font("Helvetica", "", 9.5); pdf.set_text_color(*pdf.TXT)
+    pdf.cell(0, 6, desc); pdf.ln(8)
+pdf.h2("The Three Rules That Make This Work")
+pdf.body(
+    "1.  DEPTH OVER BREADTH. Do not buy ten opening courses. One repertoire course per slot, drilled to mastery, "
+    "beats a shelf of half-read ones. Resist the 80%-off Chessable sale temptation to hoard.\n\n"
+    "2.  ONE THING AT A TIME. Run at most ONE opening course, ONE tactics/calculation engine, ONE endgame book, "
+    "and ONE strategy book concurrently. Finish, then rotate.\n\n"
+    "3.  TIE EVERY SESSION TO A WEAKNESS. Before each study block, name which of your four weaknesses it serves. "
+    "If it serves none, it is entertainment, not training - move it to the weekend.")
+pdf.h2("Methodology & A Note On Verification")
+pdf.body(
+    "These resources were gathered by twelve parallel research agents searching the live web, each briefed on your "
+    "profile, then partially cross-checked by verification agents. The overwhelming majority are well-established, "
+    "canonical works (Silman, de la Villa, Vukovic, Aagaard, the Woodpecker Method, Flores Rios, Giri's Chessable "
+    "repertoires, Tal, Bronstein) that are easy to confirm. Prices and availability shift - especially Chessable "
+    "courses, which go on deep sale frequently; always check the current price before buying, and wait for a sale "
+    "on anything non-urgent.")
+
+# ---------------- ESSENTIAL STACK
+ESSENTIAL = [
+    (1, "The Woodpecker Method", "Axel Smith & Hans Tikkanen (Quality Chess)", "Book ~$24-38",
+     "Your engine for CALCULATION SPEED. Solving the same set in shrinking time turns your 2073 puzzle eye into automatic over-the-board pattern recall - the exact cure for your 500-point rapid-to-blitz gap."),
+    (2, "Lifetime Repertoires: Giri's Najdorf", "GM Anish Giri (Chessable)", "~$99 (often 40-50% off)",
+     "Settles your single biggest leak - Black results. One world-class Najdorf, drilled on MoveTrainer, ends the line-hopping that drags your Black win rate to 32%."),
+    (3, "Lifetime Repertoires: Nimzo-Ragozin", "Sielecki & Barrish (Chessable)", "~$99 / book-only ~$50",
+     "Completes Black: your Nimzo-Indian plus a Ragozin backup for when 3.Nf3 dodges it. One connected system instead of gaps."),
+    (4, "Keep It Simple: 1.e4 - 2.0", "IM Christof Sielecki (Chessable/NIC)", "~$49-65",
+     "A low-maintenance, plan-based White backbone so prep time flows to your weaknesses, not memorising 6 different Sicilian Anti-systems."),
+    (5, "100 Endgames You Must Know", "GM Jesus de la Villa (Chessable/NIC)", "~$30-40",
+     "The fastest possible repair of your most undertrained phase. The exact 100 positions that decide club-to-master games - drillable with spaced repetition."),
+    (6, "Silman's Complete Endgame Course", "Jeremy Silman", "~$30 print",
+     "Your rating-tiered endgame foundation: study only the chapter for your level, then climb. Pairs with de la Villa for both theory and must-know positions."),
+    (7, "Chess Structures: A Grandmaster Guide", "GM Mauricio Flores Rios (Chessable/print)", "~$35-60",
+     "Directly fixes losing the thread after the opening. Teaches the plans behind the IQP, Hedgehog, Najdorf and Maroczy structures you already reach - so you know what to DO on move 15."),
+    (8, "The Art of Attack in Chess", "Vladimir Vukovic (rev. Nunn)", "~$25 print",
+     "The classic that fixes king safety from BOTH sides: you learn the attacking schemes that beat you, and how to feed your own aggressive style correctly."),
+    (9, "How to Reassess Your Chess (4th ed.)", "Jeremy Silman", "~$30 print",
+     "The canonical 1700->2100 positional bridge. Imbalance-based thinking gives you a method for the quiet middlegames where you currently drift."),
+    (10, "Grandmaster Preparation: Calculation", "Jacob Aagaard (Quality Chess)", "~$20-28",
+     "When you are ready to push past 2100: structured candidate-move and deep-calculation training that compounds your existing tactical strength."),
+    (11, "Chessable PRO + MoveTrainer", "Chessable", "$11.99/mo or $74.99/yr",
+     "The spaced-repetition delivery system for your repertoire and endgame courses, and 30% off everything else. This is how the courses above actually stick."),
+    (12, "Aimchess", "Aimchess", "Free tier; ~$8-12/mo",
+     "Personalized analytics on YOUR games - confirms in numbers where you bleed rating (openings, time trouble, conversions) so you retarget monthly."),
+    (13, "Pump Up Your Rating", "Axel Smith (Quality Chess)", "~$30",
+     "The single best practical-improvement manual for the serious club player heading to OTB - covers calculation, prep, and tournament habits you have never used."),
+    (14, "Daniel Naroditsky - YouTube (free)", "GM Daniel Naroditsky", "Free",
+     "The best free instruction online: his Sensei speedruns model the exact thought process of a 2000 climbing higher, and his endgame series is a course in itself."),
+    (15, "A coach (Pro Chess Training / Chess.com)", "GM Ramesh academy or FM/IM marketplace", "~$40-80/hr",
+     "From ~2000 upward a strong coach who finds the TYPE of mistake you repeat is the biggest single accelerator. Start around the 2000-2200 wall."),
+]
+pdf.add_page()
+pdf.h1("01  The Essential Stack")
+pdf.body(
+    "If you do nothing else, do these - in roughly this order. This is the spine of the whole plan: a complete "
+    "repertoire, a calculation engine, an endgame foundation, the positional bridge, the king-safety fix, and the "
+    "delivery tools to make it stick. Everything in the full catalog later supports or deepens one of these.")
+for rank, name, prov, cost, why in ESSENTIAL:
+    pri = "Essential"
+    if pdf.get_y() > 250:
+        pdf.add_page()
+    y0 = pdf.get_y()
+    pdf.set_fill_color(*pdf.DARK); pdf.rect(pdf.l_margin, y0, 9, 13, "F")
+    pdf.set_font("Helvetica", "B", 13); pdf.set_text_color(*pdf.GOLDL)
+    pdf.set_xy(pdf.l_margin, y0 + 2.2); pdf.cell(9, 8, str(rank), align="C")
+    pdf.set_xy(pdf.l_margin + 12, y0 - 0.2)
+    pdf.set_font("Helvetica", "B", 10); pdf.set_text_color(*pdf.DARK)
+    pdf.cell(0, 5, clean(name))
+    pdf.set_xy(pdf.l_margin + 12, y0 + 4.6)
+    pdf.set_font("Helvetica", "", 7.8); pdf.set_text_color(*pdf.MID)
+    pdf.cell(0, 4, clean(prov) + "   -   " + clean(cost))
+    pdf.set_xy(pdf.l_margin + 12, y0 + 8.4)
+    pdf.set_font("Helvetica", "I", 8.2); pdf.set_text_color(55, 60, 70)
+    pdf.multi_cell(176, 4.1, clean(why))
+    yend = max(pdf.get_y(), y0 + 13) + 1
+    pdf.set_draw_color(220, 223, 230); pdf.set_line_width(0.2)
+    pdf.line(pdf.l_margin, yend, 210 - pdf.r_margin, yend)
+    pdf.set_y(yend + 1.8)
+
+# ---------------- WEAKNESS FIX MATRIX
+pdf.add_page()
+pdf.h1("02  Fix Matrix - Weakness to Cure")
+pdf.body("Each measured weakness, the resources that target it, and exactly how to use them.")
+FIX = [
+    ("Black repertoire (32% vs 48% as White)",
+     "Giri's Najdorf  +  Nimzo-Ragozin (Sielecki/Barrish)  +  Hanging Pawns Sicilian playlist",
+     "Pick ONE Najdorf main line, drill it on MoveTrainer to move ~18-20, then play 50 training games as Black only. Review every Black loss for the exact move you left theory."),
+    ("King safety / coordinated attacks",
+     "The Art of Attack (Vukovic)  +  How to Defend in Chess (Crouch)  +  GM Prep: Attack & Defence  +  Checkmate Patterns Manual",
+     "Study attacking schemes from BOTH sides. Before you castle in a game, count attackers vs defenders near each king. Drill defensive/king-safety puzzle themes 50/week on ChessTempo."),
+    ("Calculation speed (blitz 500 below rapid)",
+     "The Woodpecker Method  +  GM Prep: Calculation  +  Ramesh Calculation  +  ChessTempo (timed)",
+     "Run full Woodpecker cycles - same set, halving the time each pass - until patterns are automatic. Add timed candidate-move drills. Play 3+2 / 5+3 (not 3+0) to build clock habits."),
+    ("Middlegame transition after the opening",
+     "Chess Structures (Flores Rios)  +  How to Reassess Your Chess  +  Sokolov Pawn Structure vols",
+     "Learn the typical plans of the exact structures your openings reach. After move ~12 in every game, write your 3-move plan before moving. Study 20 GM games in each of your structures."),
+    ("Endgame technique (undertrained)",
+     "Silman's Complete Endgame Course  +  100 Endgames You Must Know  +  Naroditsky endgames  +  lichess Practice",
+     "Spend 20% of study time here. Master K+P (opposition) then rook endings (Lucena/Philidor) first - they decide the most games. Drill the 100 must-know positions to recall."),
+    ("No OTB / FIDE experience yet",
+     "Pump Up Your Rating  +  Perpetual Chess Improver series  +  Chess for Zebras  +  'Your First OTB Tournament'",
+     "Register with your federation and enter a classical FIDE-rated event. Expect a ~1600-1750 debut - normal. Analyze every OTB game yourself BEFORE the engine (Noel Studer's method)."),
+]
+for wk, res, method in FIX:
+    if pdf.get_y() > 240:
+        pdf.add_page()
+    y0 = pdf.get_y()
+    pdf.set_fill_color(*pdf.RED); pdf.rect(pdf.l_margin, y0, 190, 6.5, "F")
+    pdf.set_font("Helvetica", "B", 9.3); pdf.set_text_color(*pdf.WHITE)
+    pdf.set_xy(pdf.l_margin + 2, y0 + 1.3); pdf.cell(0, 4, clean("WEAKNESS:  " + wk))
+    pdf.set_y(y0 + 7.5)
+    pdf.set_font("Helvetica", "B", 8.5); pdf.set_text_color(*pdf.BLUE)
+    pdf.set_x(pdf.l_margin + 2); pdf.cell(20, 4.5, "Resources:")
+    pdf.set_font("Helvetica", "", 8.5); pdf.set_text_color(*pdf.TXT)
+    pdf.multi_cell(168, 4.5, clean(res))
+    pdf.set_font("Helvetica", "B", 8.5); pdf.set_text_color(*pdf.GREEN)
+    pdf.set_x(pdf.l_margin + 2); pdf.cell(20, 4.5, "Method:")
+    pdf.set_font("Helvetica", "I", 8.5); pdf.set_text_color(55, 60, 70)
+    pdf.set_x(pdf.l_margin + 2)
+    pdf.multi_cell(186, 4.3, clean(method))
+    pdf.ln(2.5)
+
+# ---------------- PHASE DEPLOYMENT
+pdf.add_page()
+pdf.h1("03  Three-Phase Deployment")
+pdf.body("How to sequence the catalog across the roadmap. Don't run everything at once - finish a phase's core, then advance.")
+PHASES = [
+    ("PHASE 1 - FOUNDATION  (Months 1-6)", (59, 130, 246),
+     "Lock the repertoire, build the calculation/endgame base, settle your Black openings.",
+     ["Keep It Simple 1.e4 (White backbone)", "Giri's Najdorf - Short&Sweet free, then full",
+      "Nimzo-Ragozin (Black vs 1.d4)", "The Woodpecker Method (tactics speed)",
+      "Silman Endgame Course + 100 Endgames", "Naroditsky speedruns + endgame series (free)",
+      "Aimchess running on every game", "Chessable PRO as the delivery layer"]),
+    ("PHASE 2 - POSITIONAL & OTB  (Months 7-18)", (34, 197, 94),
+     "Build positional understanding, fix king safety, and start playing FIDE-rated chess.",
+     ["Chess Structures (Flores Rios)", "How to Reassess Your Chess + My System",
+      "The Art of Attack + How to Defend in Chess", "Logical Chess + Zurich 1953 (game study)",
+      "Pump Up Your Rating + Chess for Zebras", "Saint Louis CC & Hanging Pawns lectures",
+      "FIRST FIDE OTB tournaments (20-30 games)", "Yusupov Build/Boost series alongside"]),
+    ("PHASE 3 - EXPERT & NORMS  (Months 18-36)", (245, 158, 11),
+     "Deepen everything, add a coach, and prepare for title norms.",
+     ["GM Prep: Calculation / Attack&Defence / Positional Play", "Dvoretsky's Endgame Manual + Fundamental Chess Endings",
+      "Full Giri 1.e4 / Swiercz Nimzo books (deep theory)", "Kasparov - My Great Predecessors",
+      "A coach: Pro Chess Training / KCT / marketplace", "ChessBase + Mega Database for prep",
+      "ChessMood Pro or structured academy", "Tournament prep & opponent scouting"]),
+]
+for title, col, focus, items in PHASES:
+    if pdf.get_y() > 215:
+        pdf.add_page()
+    y0 = pdf.get_y()
+    pdf.set_fill_color(*col); pdf.rect(pdf.l_margin, y0, 190, 7, "F")
+    pdf.set_font("Helvetica", "B", 10.5); pdf.set_text_color(*pdf.WHITE)
+    pdf.set_xy(pdf.l_margin + 2, y0 + 1.4); pdf.cell(0, 4, title)
+    pdf.set_y(y0 + 8.5)
+    pdf.set_font("Helvetica", "I", 9); pdf.set_text_color(*pdf.MID)
+    pdf.set_x(pdf.l_margin + 2); pdf.multi_cell(186, 4.4, focus); pdf.ln(0.5)
+    pdf.set_font("Helvetica", "", 9); pdf.set_text_color(*pdf.TXT)
+    half = (len(items) + 1) // 2
+    col_x = [pdf.l_margin + 3, pdf.l_margin + 97]
+    ytop = pdf.get_y()
+    for ci, chunk in enumerate([items[:half], items[half:]]):
+        pdf.set_y(ytop)
+        for it in chunk:
+            pdf.set_x(col_x[ci])
+            pdf.set_text_color(*col); pdf.cell(4, 4.8, ">")
+            pdf.set_text_color(*pdf.TXT); pdf.multi_cell(86, 4.8, clean(it))
+    pdf.ln(3)
+
+# ---------------- WEEKLY TEMPLATE + BUDGET
+pdf.add_page()
+pdf.h1("04  Weekly Training Template")
+pdf.body("A repeatable week that slots the Essential Stack into ~2.5-3 hrs on weekdays and a heavier weekend.")
+pdf.table(
+    ["Day / Block", "Activity", "Resource", "Time"],
+    [
+        ["Every day - warmup", "30 rated puzzles", "lichess Puzzles / ChessTempo", "30 min"],
+        ["Mon / Wed / Fri", "Repertoire drilling", "Giri Najdorf / Nimzo-Ragozin / KIS 1.e4 (MoveTrainer)", "40 min"],
+        ["Mon / Wed / Fri", "Calculation set", "Woodpecker Method / GM Prep Calculation", "35 min"],
+        ["Tue / Thu", "Endgame study", "Silman Course / 100 Endgames", "30 min"],
+        ["Tue / Thu", "Positional / strategy", "Chess Structures / How to Reassess", "35 min"],
+        ["Weekend", "3-5 rapid games (15+10)", "lichess / chess.com", "2-3 hrs"],
+        ["Weekend", "Analyze own games (self first)", "Noel Studer method + engine after", "1 hr"],
+        ["Weekend", "1 master game + 1 video", "Logical Chess / Zurich 1953 + Naroditsky", "1 hr"],
+        ["Monthly", "Re-target weaknesses", "Aimchess analytics review", "30 min"],
+    ],
+    [34, 50, 84, 22],
+)
+pdf.h2("Budget Tiers - Two Honest Paths")
+pdf.set_font("Helvetica", "B", 9.5); pdf.set_text_color(*pdf.GREEN)
+pdf.cell(0, 6, "PATH A - Strong Free-Only Start (EUR/USD 0)", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+pdf.set_font("Helvetica", "", 9); pdf.set_text_color(*pdf.TXT)
+pdf.multi_cell(0, 4.8,
+    "lichess (puzzles, studies, analysis, opening explorer, endgame practice)  +  Daniel Naroditsky YouTube "
+    "(speedruns + endgames)  +  Hanging Pawns Sicilian/Nimzo playlists  +  Saint Louis Chess Club lectures  +  "
+    "Chessable free 'Short & Sweet' repertoires  +  Perpetual Chess Podcast. This alone can carry you well past 2100.")
+pdf.ln(1)
+pdf.set_font("Helvetica", "B", 9.5); pdf.set_text_color(*pdf.BLUE)
+pdf.cell(0, 6, "PATH B - Paid Fast-Track (~$250-400 one-time + ~$75-120/yr)", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+pdf.set_font("Helvetica", "", 9); pdf.set_text_color(*pdf.TXT)
+pdf.multi_cell(0, 4.8,
+    "Add: Chessable PRO ($75/yr)  +  Giri's Najdorf & Nimzo-Ragozin (on sale)  +  Woodpecker Method, Silman & "
+    "de la Villa endgames, Chess Structures, Art of Attack, How to Reassess (print/ebook)  +  Aimchess ($8-12/mo). "
+    "Later, a coach at the 2000-2200 wall (~$40-80/hr). Buy Chessable courses ONLY during their frequent deep sales.")
+pdf.ln(1)
+pdf.set_fill_color(255, 247, 237); pdf.set_draw_color(*pdf.GOLD); pdf.set_line_width(0.3)
+y0 = pdf.get_y(); pdf.rect(pdf.l_margin, y0, 190, 16, "DF")
+pdf.set_xy(pdf.l_margin + 3, y0 + 2)
+pdf.set_font("Helvetica", "B", 9); pdf.set_text_color(*pdf.DARK)
+pdf.cell(0, 5, "GOLDEN RULE:", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+pdf.set_xy(pdf.l_margin + 3, y0 + 7)
+pdf.set_font("Helvetica", "", 9); pdf.set_text_color(*pdf.TXT)
+pdf.multi_cell(184, 4.3,
+    "Owning a course is not studying it. One finished course beats five owned. Buy the next resource only when the "
+    "current one is genuinely complete and stuck in spaced repetition.")
+
+# ---------------- FULL CATALOG
+pdf.add_page()
+pdf.h1("05  The Full Catalog")
+pdf.body(
+    "All 113 researched resources, grouped by category. Each carries a PRIORITY tag and a personalized reason it "
+    "fits your game. Categories are ordered by how directly they address your weaknesses - your Black repertoire "
+    "and king safety come first.")
+for jkey, title, blurb, col in CATS:
+    res = research.get(jkey)
+    if not res:
+        # try fuzzy match on cleaned key
+        for k in research:
+            if clean(k) == clean(jkey):
+                res = research[k]; break
+    if not res:
+        continue
+    if pdf.get_y() > 250:
+        pdf.add_page()
+    # category header
+    y0 = pdf.get_y()
+    pdf.set_fill_color(*col); pdf.rect(pdf.l_margin, y0, 190, 11, "F")
+    pdf.set_font("Helvetica", "B", 12); pdf.set_text_color(*pdf.WHITE)
+    pdf.set_xy(pdf.l_margin + 3, y0 + 1.2); pdf.cell(0, 5, clean(title))
+    pdf.set_font("Helvetica", "I", 8); pdf.set_text_color(245, 245, 250)
+    pdf.set_xy(pdf.l_margin + 3, y0 + 6.3); pdf.cell(0, 4, clean(blurb))
+    pdf.set_y(y0 + 13)
+    # sort: Essential, Recommended, Optional
+    order = {"Essential": 0, "Recommended": 1, "Optional": 2}
+    for r in sorted(res, key=lambda x: order.get(x.get("priority", "Recommended"), 1)):
+        pdf.resource(r)
+    pdf.ln(1)
+
+# ---------------- CLOSING CHECKLIST
+pdf.add_page()
+pdf.set_fill_color(*pdf.DARK); pdf.rect(0, 0, 210, 297, "F")
+sq = 6
+for c in range(35):
+    for rr in range(5):
+        pdf.set_fill_color(*(22, 33, 54) if (c + rr) % 2 == 0 else (18, 27, 44))
+        pdf.rect(c * sq, rr * sq, sq, sq, "F")
+pdf.set_fill_color(*pdf.GOLD); pdf.rect(0, 30, 210, 3, "F")
+pdf.set_font("Helvetica", "B", 24); pdf.set_text_color(*pdf.GOLD)
+pdf.set_xy(0, 46); pdf.cell(210, 12, "YOUR FIRST 30 DAYS", align="C")
+pdf.set_font("Helvetica", "", 11); pdf.set_text_color(185, 195, 215)
+pdf.set_xy(0, 62); pdf.cell(210, 6, "Don't plan forever. Start these this week.", align="C")
+checks = [
+    "Buy / open: Chessable PRO, and claim Giri's Najdorf 'Short & Sweet' (free).",
+    "Start The Woodpecker Method - first easy set, note your baseline time.",
+    "Begin Silman's Complete Endgame Course at YOUR rating chapter only.",
+    "Set Aimchess on your account; read your weakness report.",
+    "Pick ONE Najdorf line; stop playing every other Sicilian as Black.",
+    "30 puzzles daily on lichess - no exceptions.",
+    "Watch one Naroditsky Sensei speedrun; copy his thinking out loud.",
+    "Switch blitz to 5+3; cap rapid moves at 3 minutes each.",
+    "Find your national federation; note the next FIDE-rated open's date.",
+    "Analyze your next 5 losses YOURSELF before turning on the engine.",
+]
+pdf.set_xy(0, 74)
+yy = 76
+for i, ch in enumerate(checks, 1):
+    pdf.set_xy(22, yy)
+    pdf.set_fill_color(*pdf.GOLD); pdf.rect(22, yy + 0.5, 5, 5, "F")
+    pdf.set_font("Helvetica", "B", 8); pdf.set_text_color(*pdf.DARK)
+    pdf.set_xy(22, yy + 0.8); pdf.cell(5, 4, str(i), align="C")
+    pdf.set_font("Helvetica", "", 9.7); pdf.set_text_color(210, 220, 235)
+    pdf.set_xy(30, yy); pdf.multi_cell(160, 5, clean(ch))
+    yy = pdf.get_y() + 2.5
+pdf.set_draw_color(*pdf.GOLD); pdf.set_line_width(0.4); pdf.line(30, yy + 2, 180, yy + 2)
+pdf.set_font("Helvetica", "I", 12); pdf.set_text_color(*pdf.GOLDL)
+pdf.set_xy(15, yy + 8)
+pdf.multi_cell(180, 7,
+    '"Amateurs collect resources. Players finish one, then the next.\nBe a player."', align="C")
+pdf.set_font("Helvetica", "", 7.5); pdf.set_text_color(110, 120, 140)
+pdf.set_xy(0, 285)
+pdf.cell(210, 4, "Companion to Scrodinger_GM_Roadmap.pdf  |  113 resources, 12 categories  |  Prepared June 2026", align="C")
+
+out = r"C:\roadtoGrandMaster\Scrodinger_Chess_Curriculum.pdf"
+pdf.output(out)
+print("Saved:", out, "| pages:", pdf.page)

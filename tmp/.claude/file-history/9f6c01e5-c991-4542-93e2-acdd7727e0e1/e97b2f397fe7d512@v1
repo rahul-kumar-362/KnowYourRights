@@ -1,0 +1,24 @@
+import asyncio
+import ssl
+import websockets
+import os
+
+async def handler(websocket, path):
+    print("Client connected successfully!")
+    await websocket.send('{"type": "connected", "channel": "status"}')
+    try:
+        async for message in websocket:
+            print("Received from client:", message)
+    except Exception as e:
+        print("Connection closed:", e)
+
+async def main():
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ssl_context.load_cert_chain(certfile="cert.pem", keyfile="key.pem")
+
+    async with websockets.serve(handler, "localhost", 8765, ssl=ssl_context):
+        print("Listening for secure WebSocket connections on wss://localhost:8765...")
+        await asyncio.Future()  # run forever
+
+if __name__ == "__main__":
+    asyncio.run(main())

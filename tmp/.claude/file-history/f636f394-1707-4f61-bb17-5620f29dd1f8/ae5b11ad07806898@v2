@@ -1,0 +1,50 @@
+"""HackerOne-style markdown, rendered only from validated findings by default.
+
+Deliberately plain: no emojis, no bounty/$ figures, no hype. Every statement is
+backed by a finding field. With nothing validated to report, it says so rather
+than fabricating content.
+"""
+
+from __future__ import annotations
+
+
+def render_markdown(report, *, validated_only: bool = True) -> str:
+    findings = report.validated() if validated_only else list(report.findings)
+    if not findings:
+        qualifier = "validated " if validated_only else ""
+        return f"# Security scan: {report.target}\n\nNo {qualifier}findings to report.\n"
+
+    blocks = [f"# Security findings in {report.target}"]
+    meta = f"Scanned {report.scanned_at.date().isoformat()} with bbscan {report.tool_version}."
+    if report.target_ref:
+        meta += f" Commit/ref: `{report.target_ref}`."
+    blocks.append(meta)
+    for index, finding in enumerate(findings, 1):
+        blocks.append(_section(index, finding))
+    return "\n\n".join(blocks) + "\n"
+
+
+def _section(index: int, f) -> str:
+    title = f.message.splitlines()[0] if f.message else f.rule_id
+    lines = [
+        f"## {index}. {title}",
+        "",
+        f"- **Rule:** `{f.rule_id}`" + (f" ({f.cwe})" if f.cwe else ""),
+        f"- **Location:** `{f.file}:{f.line}`",
+        f"- **Severity:** {f.severity.value} - CVSS {f.cvss_score:.1f} `{f.cvss_vector}`",
+        f"- **Confidence:** {f.confidence.value}",
+        "",
+        "### Description",
+        f.message,
+        "",
+        "### Proof of concept",
+        "```python",
+        f.snippet.strip() or "(see location above)",
+        "```",
+        "",
+        "### Remediation",
+        f.remediation or "See references.",
+    ]
+    if f.references:
+        lines += ["", "### References"] + [f"- {ref}" for ref in f.references]
+    return "\n".join(lines)

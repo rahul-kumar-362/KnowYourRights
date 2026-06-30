@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  KYR design tokens. Light = :root, Dark = .dark. Neutrals are biased toward the
+  indigo brand (not pure grey). Semantic status colors (success/warning/destructive/
+  info) are distinct from the brand accent. Never hardcode colors in components —
+  use these tokens via Tailwind (bg-card, text-muted-foreground, …).
+*/
+@layer base {
+  :root {
+    --background: 240 24% 99%;
+    --foreground: 240 12% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 12% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 12% 9%;
+    --primary: 245 72% 56%;
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 245 80% 96%;
+    --secondary: 240 8% 95%;
+    --secondary-foreground: 240 12% 14%;
+    --muted: 240 8% 95%;
+    --muted-foreground: 240 5% 42%;
+    --accent: 240 8% 93%;
+    --accent-foreground: 240 12% 12%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 56% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 35 92% 45%;
+    --warning-foreground: 0 0% 100%;
+    --info: 245 72% 56%;
+    --info-foreground: 0 0% 100%;
+    --border: 240 8% 90%;
+    --input: 240 8% 87%;
+    --ring: 245 72% 56%;
+    --radius: 0.8rem;
+  }
+
+  .dark {
+    --background: 240 14% 5%;
+    --foreground: 0 0% 96%;
+    --card: 240 11% 7.5%;
+    --card-foreground: 0 0% 96%;
+    --popover: 240 11% 8.5%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 245 80% 66%;
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 245 50% 16%;
+    --secondary: 240 6% 14%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 240 6% 13%;
+    --muted-foreground: 240 6% 62%;
+    --accent: 240 6% 17%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 72% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 58% 50%;
+    --success-foreground: 152 40% 8%;
+    --warning: 38 92% 58%;
+    --warning-foreground: 38 60% 8%;
+    --info: 245 80% 66%;
+    --info-foreground: 0 0% 100%;
+    --border: 240 6% 16%;
+    --input: 240 6% 19%;
+    --ring: 245 80% 66%;
+  }
+
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: hsl(var(--primary) / 0.22);
+  }
+  /* Themed, slim scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+@layer utilities {
+  /* Ambient brand glow for hero sections */
+  .kyr-aurora {
+    background-image:
+      radial-gradient(60% 50% at 18% -5%, hsl(245 80% 64% / 0.14), transparent 70%),
+      radial-gradient(50% 45% at 100% 0%, hsl(265 80% 60% / 0.10), transparent 70%);
+  }
+  .text-gradient {
+    background: linear-gradient(120deg, hsl(245 80% 70%), hsl(265 80% 72%));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--accent)) 37%,
+      hsl(var(--muted)) 63%
+    );
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: 0 0; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+  Print / "Save as PDF": force the light palette (regardless of theme) for a clean,
+  ink-friendly report, drop app chrome, and let cards break naturally across pages.
+*/
+@media print {
+  :root, .dark {
+    --background: 0 0% 100%;
+    --foreground: 240 12% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 12% 9%;
+    --primary: 245 72% 50%;
+    --primary-soft: 245 80% 96%;
+    --secondary: 240 8% 95%;
+    --muted: 240 8% 96%;
+    --muted-foreground: 240 5% 35%;
+    --accent: 240 8% 94%;
+    --destructive: 0 72% 45%;
+    --success: 152 56% 32%;
+    --warning: 35 92% 38%;
+    --info: 245 72% 50%;
+    --border: 240 8% 82%;
+  }
+  html { scroll-behavior: auto; }
+  body { background: #fff !important; }
+  .print-hide { display: none !important; }
+  .print-report { max-width: none !important; }
+  /* Neutralize any in-flight entrance animation so nothing prints blank, and
+     keep the (already light-remapped) status tints so color-coding survives. */
+  .print-report, .print-report * {
+    opacity: 1 !important;
+    transform: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Force collapsed <details> (verification notes) open so the PDF is complete. */
+  .print-report details > *:not(summary) {
+    display: block !important;
+  }
+  .print-report .kyr-card,
+  .print-report .kyr-avoid-break {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+  @page { margin: 16mm; }
+}

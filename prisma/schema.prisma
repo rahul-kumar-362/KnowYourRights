@@ -1,0 +1,158 @@
+// KnowYourRights — data model.
+// Dev uses SQLite (zero-infra, file DB) so persistence runs without Postgres/Docker.
+// Production: switch `provider` to "postgresql", restore the enum types and
+// @db.Text annotations (kept as comments), and point DATABASE_URL at Postgres.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id // Clerk user id
+  email     String?    @unique
+  language  String     @default("en")
+  role      String     @default("CITIZEN") // CITIZEN | ADMIN
+  createdAt DateTime   @default(now())
+  chats     Chat[]
+  incidents Incident[]
+  feedback  Feedback[]
+}
+
+model Chat {
+  id        String     @id @default(cuid())
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  title     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  messages  Message[]
+  incidents Incident[]
+}
+
+model Message {
+  id        String     @id @default(cuid())
+  chatId    String
+  chat      Chat       @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  role      String // USER | ASSISTANT
+  content   String
+  createdAt DateTime   @default(now())
+  citations Citation[]
+  documents Document[]
+
+  @@index([chatId])
+}
+
+// Structured incident extracted by Agent 1 + the rendered report.
+model Incident {
+  id         String     @id @default(cuid())
+  chatId     String?
+  chat       Chat?      @relation(fields: [chatId], references: [id], onDelete: SetNull)
+  userId     String?
+  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  rawText    String
+  language   String     @default("en")
+  analysis   Json // entities, timeline, legalIssues, rightsViolated, ...
+  report     Json? // the rendered 14-section report
+  confidence Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  documents  Document[]
+  citations  Citation[]
+
+  @@index([userId])
+}
+
+model Document {
+  id            String    @id @default(cuid())
+  incidentId    String?
+  incident      Incident? @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+  messageId     String?
+  message       Message?  @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  kind          String // FIR | LEGAL_NOTICE | COURT_ORDER | IMAGE | AUDIO | OTHER
+  storageKey    String
+  mimeType      String
+  extractedText String?
+  createdAt     DateTime  @default(now())
+}
+
+model LegalSource {
+  id           String    @id @default(cuid())
+  docType      String // STATUTE | JUDGMENT | NOTIFICATION | CONSTITUTION
+  title        String
+  sourceUrl    String?
+  jurisdiction String    @default("central")
+  lastAmended  String?
+  createdAt    DateTime  @default(now())
+  sections     Section[]
+}
+
+model Act {
+  id           String    @id @default(cuid())
+  name         String
+  shortCode    String    @unique
+  jurisdiction String    @default("central")
+  sections     Section[]
+}
+
+model Section {
+  id           String       @id @default(cuid())
+  actId        String
+  act          Act          @relation(fields: [actId], references: [id], onDelete: Cascade)
+  sourceId     String?
+  source       LegalSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  number       String
+  title        String
+  text         String
+  punishment   String?
+  bailable     String?
+  cognizable   String?
+  compoundable String?
+  sourceUrl    String?
+  qdrantId     String?      @unique
+  citations    Citation[]
+
+  @@unique([actId, number])
+  @@index([actId])
+}
+
+// Audit trail: which section a given assistant message / incident cited,
+// and whether the verifier confirmed it.
+model Citation {
+  id         String    @id @default(cuid())
+  messageId  String?
+  message    Message?  @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  incidentId String?
+  incident   Incident? @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  sectionId  String?
+  section    Section?  @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  actCode    String
+  sectionNo  String
+  verified   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([incidentId])
+}
+
+model Feedback {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  incidentId String?
+  rating     Int // 1..5
+  comment    String?
+  createdAt  DateTime @default(now())
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  type      String // query | retrieval_hit | retrieval_miss | low_confidence
+  language  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([type])
+}

@@ -1,0 +1,255 @@
+"""Command-line interface: one entry point replacing the three legacy scripts.
+
+    bbscan scan-local PATH        scan a local checkout
+    bbscan scan-remote OWNER/REPO  fetch (clone) then scan; OWNER scans an org
+    bbscan report FINDINGS.json    regenerate a report from prior findings
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+from scanner import __version__
+from scanner.dedup import KnownFindingStore
+from scanner.engine import Engine
+from scanner.models import Report
+from scanner.reporting import write_report
+from scanner.rules import all_rules, registry_ids
+from scanner.scope import ScopeFilter
+
+_SEVERITY_FLOOR = {"info": 0, "none": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
+_FILENAMES = {"json": "findings.json", "markdown": "report.md", "sarif": "report.sarif"}
+
+
+# --------------------------------------------------------------------------- #
+# helpers
+# --------------------------------------------------------------------------- #
+def _now():
+    return datetime.now(timezone.utc)
+
+
+def _scope_for(config_path) -> ScopeFilter:
+    if config_path and Path(config_path).exists():
+        return ScopeFilter.from_file(config_path)
+    default = Path("scope.yaml")
+    if default.exists():
+        try:
+            return ScopeFilter.from_file(default)
+        except RuntimeError:
+            pass  # PyYAML missing; fall through to built-in defaults
+    return ScopeFilter.default()
+
+
+def _min_severity(findings, level):
+    floor = _SEVERITY_FLOOR.get(level, 0)
+    return [f for f in findings if f.severity.rank >= floor]
+
+
+def _exit_code(findings, fail_on) -> int:
+    if fail_on == "none":
+        return 0
+    if fail_on == "any":
+        return 1 if findings else 0
+    floor = _SEVERITY_FLOOR[fail_on]
+    return 1 if any(f.severity.rank >= floor for f in findings) else 0
+
+
+def _emit(report, formats, out_dir, target_name, *, validated_only=False):
+    run_id = report.scanned_at.strftime("%Y%m%dT%H%M%SZ")
+    base = Path(out_dir) / target_name / run_id
+    written = []
+    for fmt in formats:
+        kwargs = {"validated_only": validated_only} if fmt == "markdown" else {}
+        written.append(write_report(report, fmt, base / _FILENAMES[fmt], **kwargs))
+    return written
+
+
+def _print_summary(report, written):
+    counts: dict = {}
+    for f in report.findings:
+        counts[f.severity.value] = counts.get(f.severity.value, 0) + 1
+    order = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "NONE"]
+    summary = ", ".join(f"{counts[s]} {s}" for s in order if counts.get(s))
+    print(f"{len(report.findings)} finding(s){': ' + summary if summary else ''}")
+    for f in report.findings:
+        print(f"  [{f.severity.value:<8}] {f.rule_id} {f.file}:{f.line} ({f.confidence.value})")
+    for path in written:
+        print(f"wrote {path}")
+
+
+def _scan_tree(path, *, rules_select, include_tests, config, min_severity, dedup, record, out):
+    rules = all_rules(select=rules_select)
+    findings = Engine(rules=rules, include_tests=include_tests).scan(path)
+    findings = _scope_for(config).apply(findings)
+    findings = _min_severity(findings, min_severity)
+    if dedup:
+        store = KnownFindingStore.load(Path(out) / "known_findings.json")
+        findings = store.filter_new(findings)
+        if record:
+            for f in findings:
+                store.register_new(f)
+            store.save()
+    return findings, [r.id for r in rules]
+
+
+# --------------------------------------------------------------------------- #
+# subcommands
+# --------------------------------------------------------------------------- #
+def _cmd_scan_local(args) -> int:
+    findings, rules_run = _scan_tree(
+        args.path,
+        rules_select=args.rules_select,
+        include_tests=args.include_tests,
+        config=args.config,
+        min_severity=args.min_severity,
+        dedup=not args.no_dedup,
+        record=args.record,
+        out=args.out,
+    )
+    report = Report(
+        target=str(args.path),
+        scanned_at=_now(),
+        tool_version=__version__,
+        findings=findings,
+        rules_run=rules_run,
+    )
+    written = _emit(report, args.format, args.out, Path(args.path).name or "scan",
+                    validated_only=args.validated_only)
+    _print_summary(report, written)
+    return _exit_code(findings, args.fail_on)
+
+
+def _cmd_scan_remote(args) -> int:
+    from scanner.acquire.git_source import clone_or_update
+
+    targets = []
+    if "/" in args.target:
+        result = clone_or_update(args.target, args.dest, ref=args.ref, update=args.update)
+        targets.append((args.target, result))
+    else:
+        from scanner.acquire.github_api import GitHubClient
+
+        client = GitHubClient()
+        repos = client.list_org_repos(args.target, include=args.include, exclude=args.exclude)
+        for repo in repos[: args.max_repos]:
+            result = clone_or_update(repo.full_name, args.dest, ref=args.ref, update=args.update)
+            targets.append((repo.full_name, result))
+
+    overall = 0
+    for name, result in targets:
+        findings, rules_run = _scan_tree(
+            result.path,
+            rules_select=args.rules_select,
+            include_tests=args.include_tests,
+            config=args.config,
+            min_severity=args.min_severity,
+            dedup=not args.no_dedup,
+            record=args.record,
+            out=args.out,
+        )
+        report = Report(
+            target=name,
+            scanned_at=_now(),
+            tool_version=__version__,
+            findings=findings,
+            target_ref=result.head_sha,
+            rules_run=rules_run,
+        )
+        written = _emit(report, args.format, args.out, name.replace("/", "_"),
+                        validated_only=args.validated_only)
+        _print_summary(report, written)
+        overall = overall or _exit_code(findings, args.fail_on)
+    return overall
+
+
+def _cmd_report(args) -> int:
+    data = json.loads(Path(args.findings_json).read_text(encoding="utf-8"))
+    report = Report.from_dict(data)
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for fmt in args.format:
+        kwargs = {"validated_only": not args.all} if fmt == "markdown" else {}
+        path = write_report(report, fmt, out_dir / _FILENAMES[fmt], **kwargs)
+        print(f"wrote {path}")
+    return 0
+
+
+# --------------------------------------------------------------------------- #
+# argument parsing
+# --------------------------------------------------------------------------- #
+def _add_common_scan_flags(p):
+    p.add_argument("--rules-select", type=lambda s: s.split(","), default=None,
+                   help="comma-separated rule ids (default: all)")
+    p.add_argument("--include-tests", action="store_true", help="also scan test directories")
+    p.add_argument("--config", default=None, help="scope config (scope.yaml/.json)")
+    p.add_argument("--format", choices=list(_FILENAMES), action="append",
+                   help="output format(s); repeatable (default: json)")
+    p.add_argument("--out", default="out", help="output directory (default: ./out)")
+    p.add_argument("--min-severity", choices=list(_SEVERITY_FLOOR), default="low")
+    p.add_argument("--validated-only", action="store_true",
+                   help="markdown shows only CONFIRMED, in-scope findings")
+    p.add_argument("--no-dedup", action="store_true", help="ignore the known-findings store")
+    p.add_argument("--record", action="store_true",
+                   help="record new findings into out/known_findings.json")
+    p.add_argument("--fail-on", choices=["none", "any", "low", "medium", "high", "critical"],
+                   default="none", help="exit non-zero when findings meet this threshold")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="bbscan", description=__doc__)
+    parser.add_argument("--version", action="version", version=f"bbscan {__version__}")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    p_local = sub.add_parser("scan-local", help="scan a local path")
+    p_local.add_argument("path")
+    _add_common_scan_flags(p_local)
+    p_local.set_defaults(func=_cmd_scan_local)
+
+    p_remote = sub.add_parser("scan-remote", help="clone then scan a repo or org")
+    p_remote.add_argument("target", help="'owner/repo' or 'owner' (whole org)")
+    p_remote.add_argument("--ref", default=None, help="branch/tag/SHA")
+    p_remote.add_argument("--dest", default="targets", help="clone destination (default: ./targets)")
+    p_remote.add_argument("--update", action="store_true", help="fetch+checkout if already cloned")
+    p_remote.add_argument("--max-repos", type=int, default=25)
+    p_remote.add_argument("--include", action="append", default=[])
+    p_remote.add_argument("--exclude", action="append", default=[])
+    _add_common_scan_flags(p_remote)
+    p_remote.set_defaults(func=_cmd_scan_remote)
+
+    p_report = sub.add_parser("report", help="regenerate a report from findings.json")
+    p_report.add_argument("findings_json")
+    p_report.add_argument("--format", choices=list(_FILENAMES), action="append")
+    p_report.add_argument("--out", default="out/report")
+    p_report.add_argument("--all", action="store_true",
+                          help="include all findings (default: validated only)")
+    p_report.set_defaults(func=_cmd_report)
+
+    return parser
+
+
+def main(argv=None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if not getattr(args, "format", None):
+        args.format = ["json"]
+    try:
+        return args.func(args)
+    except FileNotFoundError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:  # acquisition / config errors -> clean nonzero exit
+        from scanner.acquire.git_source import GitError
+        from scanner.acquire.github_api import GitHubError
+
+        if isinstance(exc, (GitError, GitHubError, ValueError, RuntimeError)):
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        raise
+
+
+if __name__ == "__main__":
+    sys.exit(main())

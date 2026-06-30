@@ -1,0 +1,252 @@
+weblate\weblate\settings_example.py:183:        "BACKEND": "django.template.backends.django.DjangoTemplates",
+weblate\weblate\settings_example.py:187:                "django.template.context_processors.debug",
+weblate\weblate\settings_example.py:188:                "django.template.context_processors.i18n",
+weblate\weblate\settings_example.py:189:                "django.template.context_processors.request",
+weblate\weblate\settings_example.py:190:                "django.template.context_processors.csrf",
+weblate\weblate\settings_example.py:425:    # Weblate apps on top to override Django locales and templates
+weblate\weblate\settings_example.py:935:    "templates.E002",
+weblate\weblate\settings_docker.py:228:        "BACKEND": "django.template.backends.django.DjangoTemplates",
+weblate\weblate\settings_docker.py:232:                "django.template.context_processors.debug",
+weblate\weblate\settings_docker.py:233:                "django.template.context_processors.i18n",
+weblate\weblate\settings_docker.py:234:                "django.template.context_processors.request",
+weblate\weblate\settings_docker.py:235:                "django.template.context_processors.csrf",
+weblate\weblate\settings_docker.py:807:private_commit_email_template_str = get_env_str("WEBLATE_PRIVATE_COMMIT_EMAIL_TEMPLATE")
+weblate\weblate\settings_docker.py:808:if private_commit_email_template_str is not None:
+weblate\weblate\settings_docker.py:809:    PRIVATE_COMMIT_EMAIL_TEMPLATE = private_commit_email_template_str
+weblate\weblate\settings_docker.py:810:del private_commit_email_template_str
+weblate\weblate\settings_docker.py:816:private_commit_name_template_str = get_env_str("WEBLATE_PRIVATE_COMMIT_NAME_TEMPLATE")
+weblate\weblate\settings_docker.py:817:if private_commit_name_template_str is not None:
+weblate\weblate\settings_docker.py:818:    PRIVATE_COMMIT_NAME_TEMPLATE = private_commit_name_template_str
+weblate\weblate\settings_docker.py:819:del private_commit_name_template_str
+weblate\weblate\settings_docker.py:881:    # Weblate apps on top to override Django locales and templates
+weblate\weblate\screenshots\views.py:16:from django.template.loader import render_to_string
+weblate\weblate\memory\views.py:156:    template_name = "memory/index.html"
+weblate\weblate\workspaces\models.py:148:            "You can use template language for various info, "
+weblate\weblate\workspaces\models.py:157:            "You can use template language for various info, "
+weblate\weblate\workspaces\models.py:166:            "You can use template language for various info, "
+weblate\weblate\workspaces\models.py:176:            "You can use template language for various info, "
+weblate\weblate\workspaces\models.py:185:            "You can use template language for various info, "
+weblate\weblate\workspaces\models.py:194:            "You can use template language for various info, "
+weblate\weblate\metrics\templatetags\metrics.py:5:from django import template
+weblate\weblate\metrics\templatetags\metrics.py:20:register = template.Library()
+weblate\weblate\screenshots\forms.py:13:from django.template.loader import render_to_string
+weblate\weblate\trans\component_copy.py:49:    "edit_template",
+weblate\weblate\trans\component_copy.py:51:    "variant_regex",
+weblate\weblate\configuration\views.py:12:from django.template.loader import render_to_string
+weblate\weblate\configuration\views.py:28:    template_name = "configuration/custom.css"
+weblate\weblate\configuration\views.py:74:            css = render_to_string(cls.template_name, custom_theme_settings).strip()
+weblate\weblate\trans\change_display.py:11:from django.template.loader import render_to_string
+weblate\weblate\trans\change_display.py:21:from weblate.trans.templatetags.translations import (
+weblate\weblate\configuration\templatetags\colors.py:7:from django import template
+weblate\weblate\configuration\templatetags\colors.py:9:register = template.Library()
+weblate\weblate\trans\widgets.py:14:from django.template.loader import render_to_string
+weblate\weblate\trans\widgets.py:29:from weblate.trans.templatetags.translations import number_format
+weblate\weblate\trans\widgets.py:136:    head_template = '<span letter_spacing="-500"><b>{}</b></span>'
+weblate\weblate\trans\widgets.py:137:    foot_template = '<span letter_spacing="1000">{}</span>'
+weblate\weblate\trans\widgets.py:243:    template_name = ""
+weblate\weblate\trans\widgets.py:295:                format_html(self.head_template, number_format(self.total)),
+weblate\weblate\trans\widgets.py:297:                    self.foot_template,
+weblate\weblate\trans\widgets.py:304:                format_html(self.head_template, number_format(self.languages)),
+weblate\weblate\trans\widgets.py:306:                    self.foot_template,
+weblate\weblate\trans\widgets.py:313:                format_html(self.head_template, self.get_percent_text()),
+weblate\weblate\trans\widgets.py:314:                format_html(self.foot_template, gettext("Translated").upper()),
+weblate\weblate\trans\widgets.py:332:                format_html(self.head_template, self.get_percent_text()),
+weblate\weblate\trans\widgets.py:333:                format_html(self.foot_template, gettext("Translated").upper()),
+weblate\weblate\trans\widgets.py:347:    head_template = '<span letter_spacing="-1000">{}</span>'
+weblate\weblate\trans\widgets.py:348:    foot_template = '<span letter_spacing="2000">{}</span>'
+weblate\weblate\trans\widgets.py:367:            template = "{}"
+weblate\weblate\trans\widgets.py:370:            template = gettext("Project {}")
+weblate\weblate\trans\widgets.py:373:            template = gettext("Component {}")
+weblate\weblate\trans\widgets.py:375:        return format_html(template, format_html("<b>{}</b>{}", name, suffix))
+weblate\weblate\trans\widgets.py:403:    template_name = "svg/badge.svg"
+weblate\weblate\trans\widgets.py:413:                self.template_name,
+weblate\weblate\trans\widgets.py:461:    template_name = "svg/multi-language-badge.svg"
+weblate\weblate\trans\widgets.py:527:                self.template_name,
+weblate\weblate\trans\widgets.py:547:    template_name = "svg/multi-language-badge-horizontal.svg"
+weblate\weblate\examples\git-merge-gettext-po:127:# Quietly take translations from $1 and apply those according to template $2
+weblate\weblate\examples\git-merge-gettext-po:130:function apply_po_template() {
+weblate\weblate\examples\git-merge-gettext-po:157:        apply_po_template -o - "$1" - |
+weblate\weblate\examples\git-merge-gettext-po:229:status "Computing initial merge without template ..."
+weblate\weblate\examples\git-merge-gettext-po:230:# Note that we may end up with some extra so we have to apply template later
+weblate\weblate\examples\git-merge-gettext-po:233:# Create a template to only output messages that are actually needed (union of messages on local and other create the template!)
+weblate\weblate\examples\git-merge-gettext-po:234:status "Computing template and applying it to merge result ..."
+weblate\weblate\examples\git-merge-gettext-po:235:msgcat --force-po -o - "${TEMP}/local" "${TEMP}/other" | apply_po_template -o "${TEMP}/merge2" "${TEMP}/merge1" -
+weblate\weblate\workspaces\migrations\0002_workspace_add_message_workspace_addon_message_and_more.py:28:                help_text="You can use template language for various info, please consult the documentation for more details.",
+weblate\weblate\workspaces\migrations\0002_workspace_add_message_workspace_addon_message_and_more.py:38:                help_text="You can use template language for various info, please consult the documentation for more details.",
+weblate\weblate\workspaces\migrations\0002_workspace_add_message_workspace_addon_message_and_more.py:69:                help_text="You can use template language for various info, please consult the documentation for more details.",
+weblate\weblate\workspaces\migrations\0002_workspace_add_message_workspace_addon_message_and_more.py:79:                help_text="You can use template language for various info, please consult the documentation for more details.",
+weblate\weblate\workspaces\migrations\0002_workspace_add_message_workspace_addon_message_and_more.py:142:                help_text="You can use template language for various info, please consult the documentation for more details.",
+weblate\weblate\workspaces\migrations\0002_workspace_add_message_workspace_addon_message_and_more.py:168:                help_text="You can use template language for various info, please consult the documentation for more details.",
+weblate\weblate\trans\alerts\files.py:42:        result = {"monolingual": bool(component.template)}
+weblate\weblate\trans\alerts\files.py:140:    doc_anchor = "component-template"
+weblate\weblate\trans\alerts\files.py:149:        for name in (component.template, component.intermediate, component.new_base):
+weblate\weblate\trans\alerts\config.py:107:            or component.template
+weblate\weblate\trans\alerts\config.py:342:        return component.is_glossary and bool(component.template)
+weblate\weblate\wladmin\views.py:524:    template_name = "manage/users.html"
+weblate\weblate\wladmin\views.py:719:    template_name = "manage/teams.html"
+weblate\weblate\wladmin\views.py:766:    template_name = "manage/workspaces.html"
+weblate\weblate\wladmin\views.py:806:    template_name = "manage/workspace_form.html"
+weblate\weblate\trans\alerts\community.py:72:    template = Path(component.new_base)
+weblate\weblate\trans\alerts\community.py:73:    parts = template.parts
+weblate\weblate\trans\alerts\community.py:95:    template_name = "trans/alert/community.html"
+weblate\weblate\trans\alerts\base.py:11:from django.template.loader import render_to_string
+weblate\weblate\trans\alerts\base.py:45:    template_name = ""
+weblate\weblate\trans\alerts\base.py:87:        template_name = (
+weblate\weblate\trans\alerts\base.py:88:            self.template_name or f"trans/alert/{self.__class__.__name__.lower()}.html"
+weblate\weblate\trans\alerts\base.py:90:        return render_to_string(template_name, self.get_context(user))
+weblate\weblate\trans\views\hooks.py:385:        templates: tuple[str, ...]
+weblate\weblate\trans\views\hooks.py:387:            templates = BITBUCKET_GIT_REPOS + BITBUCKET_HG_REPOS
+weblate\weblate\trans\views\hooks.py:389:            templates = BITBUCKET_HG_REPOS
+weblate\weblate\trans\views\hooks.py:391:            templates = BITBUCKET_GIT_REPOS
+weblate\weblate\trans\views\hooks.py:396:            for repo in templates:
+weblate\weblate\wladmin\templatetags\check_links.py:9:from django import template
+weblate\weblate\wladmin\templatetags\check_links.py:11:from weblate.trans.templatetags.translations import render_documentation_icon
+weblate\weblate\wladmin\templatetags\check_links.py:17:register = template.Library()
+weblate\weblate\trans\views\files.py:90:            # Add templates for all components
+weblate\weblate\trans\views\files.py:95:                translation.component.get_template_filename,
+weblate\weblate\trans\views\edit.py:59:from weblate.trans.templatetags.translations import (
+weblate\weblate\trans\views\edit.py:160:            if component.has_template():
+weblate\weblate\checks\views.py:67:    template_name = "check_list.html"
+weblate\weblate\trans\views\create.py:188:    template_name = "trans/project_import.html"
+weblate\weblate\trans\views\create.py:362:                    bool(form.instance.template) or form.instance.file_format == "tbx"
+weblate\weblate\trans\views\create.py:556:        self.initial["template"] = fake.template
+weblate\weblate\trans\views\create.py:564:    template_name = "trans/component_create.html"
+weblate\weblate\machinery\views.py:30:from weblate.trans.templatetags.translations import format_language_string
+weblate\weblate\machinery\views.py:130:    template_name = "machinery/list.html"
+weblate\weblate\machinery\views.py:215:    template_name = "machinery/edit.html"
+weblate\weblate\checks\same.py:81:    # Strip template markup
+weblate\weblate\trans\views\changes.py:93:    def get_template_names(self):
+weblate\weblate\trans\views\changes.py:98:        return super().get_template_names()
+weblate\weblate\trans\views\changes.py:120:        # Compatibility with digest templates
+weblate\weblate\trans\views\changes.py:361:        context["subject"] = notification.render_template(
+weblate\weblate\trans\views\changes.py:364:        content = notification.render_template(".html", context, digest=bool(others))
+weblate\weblate\checks\ruby.py:22:      )|(?:                            # template style
+weblate\weblate\checks\ruby.py:50:    - template style (implicit %s): %{variable}
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:29:#: weblate/accounts/avatar.py:116 weblate/templates/accounts/profile.html:424
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:30:#: weblate/templates/accounts/user.html:20 weblate/templates/base.html:359
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:31:#: weblate/templates/snippets/user-list.html:15
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:47:#: weblate/templates/auth/team.html:126 weblate/templates/manage/users.html:60
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:48:#: weblate/templates/trans/project-access.html:59
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:144:#: weblate/accounts/forms.py:644 weblate/templates/manage/performance.html:28
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:145:#: weblate/templates/manage/performance.html:81
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:155:#: weblate/accounts/forms.py:671 weblate/accounts/templatetags/authnames.py:34
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:157:#: weblate/templates/accounts/user.html:251
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:158:#: weblate/templates/manage/users.html:61
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:159:#: weblate/templates/trans/project-access.html:61 weblate/utils/fields.py:39
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:176:#: weblate/accounts/forms.py:743 weblate/templates/accounts/profile.html:562
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:207:#: weblate/accounts/forms.py:824 weblate/accounts/templatetags/authnames.py:33
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:236:#: weblate/templates/accounts/profile.html:106
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:237:#: weblate/templates/accounts/user.html:174
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:242:#: weblate/templates/accounts/user.html:171
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:243:#: weblate/templates/dashboard/user.html:43
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:315:#: weblate/auth/models.py:1679 weblate/templates/auth/team.html:125
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:316:#: weblate/templates/manage/users.html:59
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:317:#: weblate/templates/trans/project-access.html:58 weblate/utils/forms.py:85
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:347:#: weblate/auth/models.py:1698 weblate/templates/accounts/profile.html:440
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:348:#: weblate/templates/accounts/user.html:332
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:349:#: weblate/templates/trans/project-access-team-form.html:13
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:713:#: weblate/accounts/models.py:610 weblate/templates/accounts/profile.html:505
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:714:#: weblate/templates/accounts/user.html:309
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:835:#: weblate/accounts/models.py:852 weblate/templates/dashboard/user.html:22
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:839:#: weblate/accounts/models.py:853 weblate/templates/dashboard/user.html:29
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:843:#: weblate/accounts/models.py:854 weblate/templates/dashboard/user.html:99
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:847:#: weblate/accounts/models.py:855 weblate/templates/dashboard/user.html:36
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:860:#: weblate/templates/snippets/watch-dropdown.html:59
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:861:#: weblate/templates/snippets/watch-dropdown.html:66
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:925:#: weblate/templates/snippets/embed-units.html:66
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1273:#: weblate/accounts/templatetags/authnames.py:57
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1277:#: weblate/accounts/templatetags/authnames.py:58
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1281:#: weblate/accounts/templatetags/authnames.py:59
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1311:#: weblate/accounts/views.py:1471 weblate/templates/accounts/reset.html:7
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1312:#: weblate/templates/accounts/reset.html:34
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1313:#: weblate/templates/accounts/user.html:437
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1354:#: weblate/templates/accounts/contact.html:7 weblate/templates/footer.html:41
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1358:#: weblate/accounts/views.py:685 weblate/templates/accounts/hosting.html:7
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1374:#: weblate/accounts/views.py:733 weblate/templates/accounts/hosting.html:62
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1375:#: weblate/templates/accounts/trial.html:7
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1393:#: weblate/accounts/views.py:973 weblate/templates/base.html:456
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1406:#: weblate/templates/accounts/user_profile_link.html:19
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1410:#: weblate/accounts/views.py:1129 weblate/templates/403.html:20
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1411:#: weblate/templates/404.html:21 weblate/templates/accounts/2fa.html:7
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1412:#: weblate/templates/accounts/2fa.html:33
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1413:#: weblate/templates/accounts/login.html:7
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1414:#: weblate/templates/accounts/login.html:40
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1415:#: weblate/templates/accounts/redirect.html:7 weblate/templates/base.html:290
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1416:#: weblate/templates/registration/logged_out.html:17
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1417:#: weblate/templates/weblate_auth/invitation_detail.html:33
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1438:#: weblate/accounts/views.py:1355 weblate/templates/accounts/password.html:17
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1439:#: weblate/templates/accounts/profile.html:206
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1440:#: weblate/wladmin/templates/admin/base.html:13
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1572:#: weblate/templates/snippets/autoform.html:13
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1573:#: weblate/templates/translation.html:85
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1755:#: weblate/addons/flags.py:113 weblate/templates/category-language.html:53
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1756:#: weblate/templates/category-language.html:136
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1757:#: weblate/templates/category.html:84 weblate/templates/category.html:234
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1758:#: weblate/templates/component.html:98 weblate/templates/component.html:288
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1759:#: weblate/templates/language-project.html:84
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1760:#: weblate/templates/language-project.html:210
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1761:#: weblate/templates/project.html:99 weblate/templates/project.html:311
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1762:#: weblate/templates/translation.html:80 weblate/templates/translation.html:213
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1763:#: weblate/templates/workspace.html:51 weblate/templates/workspace.html:113
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1965:msgid "The component has to define a gettext template for new translations."
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1970:"The Django add-on expects the template for new translations to be named "
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:1995:"The Sphinx add-on expects the template for new translations to be a .pot "
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2001:"The Sphinx add-on expects the template for new translations to live in a "
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2090:#: weblate/templates/snippets/libre-checklist.html:26
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2091:#: weblate/templates/trans/alert/unsupportedconfiguration.html:16
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2092:#: weblate/templates/trans/discover-choice.html:7 weblate/trans/forms.py:719
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2102:msgid "Use Django template syntax. This template must include {{ component }}."
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2111:"Leave empty for bilingual translation files. When set, this template must "
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2122:"file. This template must include {{ component }}."
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2126:#: weblate/templates/trans/alert/inexistantfiles.html:14
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2135:"source strings. This template must include {{ component }}."
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2238:"template."
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2267:msgid "This template must include {{ component }}."
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2271:msgid "This template must include component markup."
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2316:#: weblate/templates/snippets/query-builder.html:16
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2317:#: weblate/templates/snippets/query-builder.html:20
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2318:#: weblate/templates/snippets/translation.html:12 weblate/trans/admin.py:99
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2331:#: weblate/addons/forms.py:1389 weblate/templates/addons/pseudolocale.html:9
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2335:#: weblate/addons/forms.py:1394 weblate/templates/addons/pseudolocale.html:10
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2339:#: weblate/addons/forms.py:1399 weblate/templates/addons/pseudolocale.html:13
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2343:#: weblate/addons/forms.py:1404 weblate/templates/addons/pseudolocale.html:12
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2506:msgid "Updates the gettext template using xgettext on selected source files."
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2514:msgid "Updates the gettext template using Meson gettext conventions."
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2518:msgid "Update gettext template (Django)"
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2523:"Updates the gettext template using Django's built-in makemessages command."
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2532:"Updates the gettext template using Sphinx's gettext builder without loading "
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2665:#: weblate/api/serializers.py:519 weblate/templates/accounts/user.html:276
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2720:#: weblate/api/serializers.py:1902 weblate/templates/js/git-status.html:25
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2724:#: weblate/api/serializers.py:1903 weblate/templates/fonts/font_detail.html:63
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2725:#: weblate/templates/js/git-status.html:79
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2729:#: weblate/api/serializers.py:1904 weblate/templates/js/git-status.html:96
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2733:#: weblate/api/serializers.py:1905 weblate/templates/js/git-status.html:91
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2737:#: weblate/api/serializers.py:1908 weblate/templates/js/git-status.html:101
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2741:#: weblate/api/serializers.py:1910 weblate/templates/js/git-status.html:63
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2745:#: weblate/api/serializers.py:1911 weblate/templates/js/git-status.html:166
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2749:#: weblate/api/serializers.py:1914 weblate/templates/js/git-status.html:178
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2753:#: weblate/api/serializers.py:1918 weblate/templates/js/git-status.html:189
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2757:#: weblate/api/serializers.py:1922 weblate/templates/js/git-status.html:200
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2761:#: weblate/api/serializers.py:1926 weblate/templates/js/git-status.html:210
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2766:#: weblate/templates/drf_spectacular/redoc.html:10
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2819:#: weblate/templates/accounts/user.html:278
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2820:#: weblate/templates/accounts/user.html:331
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2821:#: weblate/templates/component.html:364
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2822:#: weblate/templates/dashboard/user.html:105 weblate/templates/data.html:28
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2823:#: weblate/templates/data.html:69 weblate/templates/data.html:113
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2824:#: weblate/templates/language.html:73 weblate/templates/list-projects.html:3
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2825:#: weblate/templates/snippets/list-objects.html:50 weblate/trans/forms.py:2635
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2832:#: weblate/api/views.py:3778 weblate/templates/component.html:365
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2841:#: weblate/checks/views.py:271 weblate/templates/accounts/user.html:279
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2842:#: weblate/templates/addons/discovery_preview.html:6
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2843:#: weblate/templates/addons/language_consistency_preview.html:48
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2844:#: weblate/templates/category-language.html:80
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2845:#: weblate/templates/category.html:161 weblate/templates/component-list.html:42
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2846:#: weblate/templates/language-project.html:142
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2847:#: weblate/templates/project.html:242
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2848:#: weblate/templates/snippets/libre-checklist.html:23
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2849:#: weblate/templates/translate.html:419 weblate/templates/translate.html:863
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2850:#: weblate/templates/translation.html:159 weblate/templates/widgets.html:51
+weblate\weblate\locale\chn\LC_MESSAGES\django.po:2856:#: weblate/api/views.py:3795 weblate/templates/billing/detail-content.html:123
+
+[Showing results with pagination = limit: 250]

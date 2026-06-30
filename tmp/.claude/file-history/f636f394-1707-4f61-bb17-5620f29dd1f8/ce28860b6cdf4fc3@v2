@@ -1,0 +1,56 @@
+import json
+
+from scanner.cli import main
+
+VULN = (
+    "import ssl\n"
+    "import websockets\n"
+    "async def f(u):\n"
+    "    return await websockets.connect(u, ssl=ssl.SSLContext())\n"
+)
+SAFE = "import ssl\nctx = ssl.create_default_context()\n"
+
+
+def test_scan_local_writes_json_and_fails_on_high(tmp_path):
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "m.py").write_text(VULN, encoding="utf-8")
+    out = tmp_path / "out"
+    code = main(
+        ["scan-local", str(src), "--out", str(out), "--format", "json",
+         "--fail-on", "high", "--no-dedup"]
+    )
+    assert code == 1  # a HIGH finding trips --fail-on high
+    json_files = list(out.rglob("findings.json"))
+    assert json_files
+    data = json.loads(json_files[0].read_text(encoding="utf-8"))
+    assert any(f["rule_id"] == "PY-SSL-001" for f in data["findings"])
+
+
+def test_scan_local_clean_tree_exits_zero(tmp_path):
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "ok.py").write_text(SAFE, encoding="utf-8")
+    out = tmp_path / "out"
+    code = main(["scan-local", str(src), "--out", str(out), "--fail-on", "high", "--no-dedup"])
+    assert code == 0
+
+
+def test_report_regenerates_markdown_from_json(tmp_path):
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "m.py").write_text(VULN, encoding="utf-8")
+    out = tmp_path / "out"
+    main(["scan-local", str(src), "--out", str(out), "--format", "json", "--no-dedup"])
+    findings_json = list(out.rglob("findings.json"))[0]
+    rep_out = tmp_path / "rep"
+    code = main(["report", str(findings_json), "--out", str(rep_out), "--format", "markdown"])
+    assert code == 0
+    md_files = list(rep_out.rglob("*.md"))
+    assert md_files
+    assert "PY-SSL-001" in md_files[0].read_text(encoding="utf-8")
+
+
+def test_scan_remote_rejects_bad_spec(tmp_path):
+    code = main(["scan-remote", "../evil", "--dest", str(tmp_path)])
+    assert code == 2

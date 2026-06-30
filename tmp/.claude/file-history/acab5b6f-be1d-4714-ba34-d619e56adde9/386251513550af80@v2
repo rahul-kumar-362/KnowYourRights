@@ -1,0 +1,100 @@
+# 📖 Glossary of Chess Terms
+
+Every important term used in this curriculum, defined in one line, linked to its full file where one exists. Terms are grouped: **Tactics · Strategy · Endgames · Calculation · General**.
+
+---
+
+## Tactical motifs
+
+| Term | One-line definition | Full file |
+|---|---|---|
+| **Fork** | One piece attacks two or more targets at once. | [fork](03-Tactics/fork.md) |
+| **Royal fork** | A fork hitting the enemy king **and** queen (usually by a knight). | [fork](03-Tactics/fork.md) |
+| **Family fork** | A knight fork hitting king, queen and rook together. | [fork](03-Tactics/fork.md) |
+| **Pin** | A piece cannot/should not move because a more valuable piece sits behind it. | [pin](03-Tactics/pin.md) |
+| **Absolute pin** | A pin against the king — the pinned piece is **illegal** to move. | [pin](03-Tactics/pin.md) |
+| **Relative pin** | A pin against a valuable (non-king) piece — legal but costly to break. | [pin](03-Tactics/pin.md) |
+| **Skewer** | The reverse pin: the more valuable piece is in front and must move, exposing a piece behind. | [skewer](03-Tactics/skewer.md) |
+| **Discovered attack** | Moving one piece unveils an attack from a piece behind it. | [discovered-attack](03-Tactics/discovered-attack.md) |
+| **Discovered check** | A discovered attack where the unveiled piece gives check. | [discovered-check](03-Tactics/discovered-check.md) |
+| **Double check** | Both the moving piece and the unveiled piece give check; the king **must** move. | [discovered-check](03-Tactics/discovered-check.md) |
+| **Double attack** | Two simultaneous threats the opponent cannot both meet (a fork is one kind). | [double-attack](03-Tactics/double-attack.md) |
+| **Decoy (attraction)** | Luring an enemy piece, often the king, **to** a bad square via sacrifice. | [decoy](03-Tactics/decoy.md) |
+| **Deflection** | Forcing a defender **away** from a duty it was performing. | [deflection](03-Tactics/deflection.md) |
+| **Removing the defender** | Capturing or chasing the piece that guards a key square or piece. | [removing-the-defender](03-Tactics/removing-the-defender.md) |
+| **Overloading** | A defender given too many duties; attack one and the others collapse. | [overloading](03-Tactics/overloading.md) |
+| **Interference (obstruction)** | Interposing a piece to cut the line between a defender and what it defends. | [interference](03-Tactics/interference.md) |
+| **Clearance sacrifice** | Vacating a square, file, rank or diagonal so another piece can use it. | [clearance-sacrifice](03-Tactics/clearance-sacrifice.md) |
+| **Zwischenzug (intermezzo)** | An in-between move (usually a check or threat) inserted before the expected reply. | [zwischenzug](03-Tactics/zwischenzug.md) |
+| **X-ray** | A long-range piece acts **through** an intervening piece on a line. | [x-ray](03-Tactics/x-ray.md) |
+| **Windmill (see-saw)** | A repeating discovered-check mechanism that harvests material. | [windmill](03-Tactics/windmill.md) |
+| **Trapped piece** | An enemy piece restricted until it can be captured. | [trapped-piece](03-Tactics/trapped-piece.md) |
+| **Back-rank mate** | Mate on the 1st/8th rank when the king is boxed in by its own pawns. | [back-rank-mate](03-Tactics/back-rank-mate.md) |
+| **Luft** | An escape square made for the king (e.g. h3/h6) to avoid back-rank mate. | [back-rank-mate](03-Tactics/back-rank-mate.md) |
+| **Smothered mate** | A knight mates a king hemmed in by its own pieces (Philidor's legacy). | [smothered-mate](03-Tactics/smothered-mate.md) |
+| **Desperado** | A doomed piece grabs material or creates a threat before it is lost. | [desperado](03-Tactics/desperado.md) |
+| **Underpromotion** | Promoting to knight, rook or bishop instead of a queen for a tactical reason. | [underpromotion](03-Tactics/underpromotion.md) |
+| **Combination** | A forcing sequence of moves (often with a sacrifice) yielding a concrete gain. | [combinations](03-Tactics/combinations-and-sacrifices.md) |
+| **Sham sacrifice** | A "sacrifice" whose material is regained by force (vs a real/positional sac). | [combinations](03-Tactics/combinations-and-sacrifices.md) |
+| **CCT** | Checks, Captures, Threats — the forcing moves to scan first every move. | [combinations](03-Tactics/combinations-and-sacrifices.md) |
+| **LPDO** | "Loose Pieces Drop Off" — undefended pieces invite double attacks. | [double-attack](03-Tactics/double-attack.md) |
+
+---
+
+## Positional / strategic terms
+
+| Term | One-line definition | Full file |
+|---|---|---|
+| **Pawn structure** | The pawn skeleton that dictates plans for both sides. | [pawn-structures](04-Strategy-and-Positional-Play/pawn-structures.md) |
+| **Isolated pawn (IQP)** | A pawn with no friendly pawns on adjacent files; weak square in front, but dynamic. | [pawn weaknesses](04-Strategy-and-Positional-Play/isolated-doubled-backward-pawns.md) |
+| **Doubled pawns** | Two friendly pawns on the same file. | [pawn weaknesses](04-Strategy-and-Positional-Play/isolated-doubled-backward-pawns.md) |
+| **Backward pawn** | A pawn that cannot safely advance and cannot be defended by a pawn. | [pawn weaknesses](04-Strategy-and-Positional-Play/isolated-doubled-backward-pawns.md) |
+| **Passed pawn** | A pawn with no enemy pawns able to stop it on its file or adjacent files. | [passed-pawns](04-Strategy-and-Positional-Play/passed-pawns.md) |
+| **Outpost** | A square (often on the 5th/6th rank) that can't be attacked by an enemy pawn — ideal for a knight. | [weak squares & outposts](04-Strategy-and-Positional-Play/weak-squares-and-outposts.md) |
+| **Open / half-open file** | A file with no pawns / no friendly pawns — a highway for rooks. | [open files](04-Strategy-and-Positional-Play/open-and-half-open-files.md) |
+| **Bishop pair** | Owning both bishops — a long-term edge, especially in open positions. | [the bishop pair](04-Strategy-and-Positional-Play/the-bishop-pair.md) |
+| **Good / bad bishop** | A bishop free of / blocked by its own pawns. | [good & bad bishops](04-Strategy-and-Positional-Play/good-and-bad-bishops.md) |
+| **Minority attack** | Advancing fewer pawns against more to create a weakness. | [minority attack](04-Strategy-and-Positional-Play/the-minority-attack.md) |
+| **Prophylaxis** | Preventing the opponent's plan before pursuing your own. | [prophylaxis](04-Strategy-and-Positional-Play/prophylaxis-and-restriction.md) |
+| **Two weaknesses** | Win by creating a second front so the defense is overstretched. | [two weaknesses](04-Strategy-and-Positional-Play/the-two-weaknesses-principle.md) |
+| **Initiative** | The ability to make threats and force the opponent to react. | [sacrificing for initiative](07-Attacking-Play/piece-sacrifices-for-initiative.md) |
+| **Tempo** | A unit of time (one move); "gaining a tempo" = developing while making a threat. | [maneuvering](04-Strategy-and-Positional-Play/maneuvering-and-improving-pieces.md) |
+
+---
+
+## Endgame terms
+
+| Term | One-line definition | Full file |
+|---|---|---|
+| **Opposition** | Kings face off with one square between; the side **not** to move controls key squares. | [the opposition](05-Endgames/the-opposition.md) |
+| **Distant / diagonal opposition** | Opposition held across several squares or on a diagonal. | [the opposition](05-Endgames/the-opposition.md) |
+| **Triangulation** | A king maneuver to **lose a tempo** and hand the move to the opponent (forcing zugzwang). | [triangulation](05-Endgames/triangulation.md) |
+| **Zugzwang** | A position where any move worsens your position — the duty to move is a liability. | [zugzwang](05-Endgames/zugzwang.md) |
+| **Mutual (reciprocal) zugzwang** | A position bad for **whichever** side is to move. | [zugzwang](05-Endgames/zugzwang.md) |
+| **Key squares** | Squares the stronger king must reach to force a pawn through. | [key squares](05-Endgames/key-squares-and-rule-of-the-square.md) |
+| **Rule of the square** | A quick test of whether a lone king can catch a passed pawn. | [key squares](05-Endgames/key-squares-and-rule-of-the-square.md) |
+| **Lucena position** | The fundamental winning R+P vs R method — "building a bridge." | [rook endgames](05-Endgames/rook-endgames.md) |
+| **Philidor position** | The fundamental drawing R vs R+P defense — 3rd-rank then checks from behind. | [rook endgames](05-Endgames/rook-endgames.md) |
+| **Fortress** | A drawn setup the stronger side cannot break despite a material deficit. | [the fortress](05-Endgames/the-fortress.md) |
+| **Breakthrough** | A pawn sacrifice that creates an unstoppable passed pawn. | [pawn breakthrough](05-Endgames/pawn-breakthrough.md) |
+| **Wrong-colored bishop** | A rook-pawn + bishop that can't control the queening square = draw. | [minor-piece endgames](05-Endgames/minor-piece-endgames.md) |
+
+---
+
+## Calculation / general terms
+
+| Term | One-line definition | Full file |
+|---|---|---|
+| **Candidate moves** | The shortlist of plausible moves you calculate in a position. | [candidate moves](02-Board-Vision-and-Calculation/candidate-moves-and-the-tree.md) |
+| **Tree of analysis** | The branching structure of variations you calculate. | [calculation method](02-Board-Vision-and-Calculation/calculation-method.md) |
+| **Visualization** | Seeing the board and future positions in your mind without moving pieces. | [visualization](02-Board-Vision-and-Calculation/visualization-training.md) |
+| **Evaluation** | Judging who stands better and by how much (material, king safety, activity, structure). | [evaluating positions](02-Board-Vision-and-Calculation/evaluating-positions.md) |
+| **Tabiya** | A standard, frequently-reached opening position from which plans branch. | [repertoire](06-Openings/building-a-repertoire.md) |
+| **Novelty (TN)** | A new move in a known theoretical position. | [2500-2800 band](09-Training-Plan/06-band-2500-2800.md) |
+| **Tilt** | Emotionally-driven poor play after a setback. | [psychology](10-Tournament-and-Psychology/psychology-tilt-and-mental-game.md) |
+| **Deliberate practice** | Focused training at the edge of your ability with immediate feedback. | [deliberate practice](01-Mindset-and-Study-Method/deliberate-practice.md) |
+| **Title norms** | Performance results required to earn FM/IM/GM titles. | [the rating ladder](00-Start-Here/the-rating-ladder-explained.md) |
+
+---
+
+> Notation reminder: **K**=king, **Q**=queen, **R**=rook, **B**=bishop, **N**=knight, pawns have no letter. `+` = check, `#` = checkmate, `x` = capture, `O-O` = kingside castling, `O-O-O` = queenside, `=Q` = promotion. In this guide's ASCII boards, **UPPERCASE = White**, *lowercase* = Black, `.` = empty square.

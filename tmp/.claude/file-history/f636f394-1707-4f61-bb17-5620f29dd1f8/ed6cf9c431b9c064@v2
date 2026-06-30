@@ -1,0 +1,75 @@
+"""Rule abstractions and the shared finding factory.
+
+Every rule declares a CVSS vector; the ``finding()`` factory derives the score
+and severity from it via ``scanner.cvss`` so severity is never hand-assigned.
+"""
+
+from __future__ import annotations
+
+import ast
+from abc import ABC, abstractmethod
+from collections.abc import Iterator
+
+from scanner import cvss
+from scanner.context import FileContext
+from scanner.models import Confidence, Finding
+
+
+class Rule(ABC):
+    id: str = ""
+    name: str = ""
+    cvss_vector: str = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N"
+    confidence: Confidence = Confidence.PROBABLE
+    cwe = None
+    remediation: str = ""
+    references: tuple = ()
+
+    @abstractmethod
+    def analyze(self, ctx: FileContext) -> Iterator[Finding]:
+        ...
+
+    def finding(
+        self,
+        ctx: FileContext,
+        node: ast.AST,
+        message: str,
+        *,
+        confidence=None,
+        cvss_vector=None,
+        cwe=None,
+    ) -> Finding:
+        vector = cvss_vector or self.cvss_vector
+        score, severity = cvss.compute(vector)
+        return Finding(
+            rule_id=self.id,
+            message=message,
+            file=ctx.display_path or str(ctx.path),
+            line=getattr(node, "lineno", 0),
+            col=getattr(node, "col_offset", 0),
+            cvss_vector=vector,
+            cvss_score=score,
+            severity=severity,
+            snippet=ctx.segment(node),
+            confidence=confidence or self.confidence,
+            cwe=cwe if cwe is not None else self.cwe,
+            remediation=self.remediation,
+            references=self.references,
+        )
+
+
+class RuleVisitor(ast.NodeVisitor):
+    def __init__(self, rule: "AstRule", ctx: FileContext):
+        self.rule = rule
+        self.ctx = ctx
+        self.findings: list = []
+
+
+class AstRule(Rule):
+    """Convenience base for rules driven by an ``ast.NodeVisitor``."""
+
+    visitor_class = RuleVisitor
+
+    def analyze(self, ctx: FileContext) -> Iterator[Finding]:
+        visitor = self.visitor_class(self, ctx)
+        visitor.visit(ctx.tree)
+        yield from visitor.findings
