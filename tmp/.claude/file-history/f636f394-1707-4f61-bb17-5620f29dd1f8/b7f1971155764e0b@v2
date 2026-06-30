@@ -1,8 +1,0 @@
-"""bbscan — a high-signal, AST-based security scanner.
-
-The core local-scan path depends only on the Python standard library so that
-``python -m scanner <path>`` runs anywhere. Optional features (GitHub fetching,
-YAML config, external SAST engines) are isolated behind extras.
-"""
-
-__version__ = "0.1.0"

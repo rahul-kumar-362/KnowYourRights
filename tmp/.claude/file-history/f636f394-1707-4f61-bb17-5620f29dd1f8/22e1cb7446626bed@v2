@@ -1,4 +1,0 @@
-import os
-
-api_secret = os.environ["CB_API_SECRET"]
-api_key = os.getenv("CB_API_KEY")

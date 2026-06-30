@@ -1,9 +1,0 @@
-import subprocess
-
-
-def run_eval(expr):
-    return eval(expr)  # FLAG: PY-EXEC-001
-
-
-def run_shell(cmd):
-    subprocess.run(cmd, shell=True)  # FLAG: PY-EXEC-001

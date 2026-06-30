@@ -1,5 +1,0 @@
-import websockets
-
-
-async def open_conn(base_url):
-    return await websockets.connect(base_url, ssl=None)

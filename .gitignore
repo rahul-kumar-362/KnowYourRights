@@ -39,3 +39,4 @@ Thumbs.db
 # sqlite dev db
 /prisma/dev.db
 /prisma/dev.db-journal
+tmp/

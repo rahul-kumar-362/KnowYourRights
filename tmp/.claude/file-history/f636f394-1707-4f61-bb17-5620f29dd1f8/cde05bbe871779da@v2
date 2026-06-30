@@ -1,9 +1,0 @@
-"""Machine-readable JSON report."""
-
-from __future__ import annotations
-
-import json
-
-
-def render_json(report) -> str:
-    return json.dumps(report.to_dict(), indent=2) + "\n"

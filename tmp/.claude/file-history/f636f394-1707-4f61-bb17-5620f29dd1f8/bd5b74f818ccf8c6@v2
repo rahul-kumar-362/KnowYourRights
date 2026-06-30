@@ -1,6 +1,0 @@
-import ssl
-
-
-def make_ctx():
-    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)  # FLAG: PY-SSL-001
-    return ctx
